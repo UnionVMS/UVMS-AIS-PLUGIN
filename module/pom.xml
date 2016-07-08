@@ -47,7 +47,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ais-ra</artifactId>
-            <version>${project.version}</version>
+            <version>${ais.ra.version}</version>
             <type>rar</type>
         </dependency>
     </dependencies>
