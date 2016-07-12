@@ -15,9 +15,9 @@
         <sl4j.version>1.7.7</sl4j.version>
         <logback.version>1.1.2</logback.version>
         <logback.core.version>1.1.2</logback.core.version>
-        <audit.model.version>2.0.7</audit.model.version>
+        <audit.model.version>2.0.8-SNAPSHOT</audit.model.version>
         <exchange.model.version>2.0.8-SNAPSHOT</exchange.model.version>
-        <ais.ra.version>2.0.5</ais.ra.version>
+        <ais.ra.version>2.0.6-SNAPSHOT</ais.ra.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <commons.lang.version>3.4</commons.lang.version>
