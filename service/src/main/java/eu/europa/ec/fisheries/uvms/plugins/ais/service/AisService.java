@@ -88,9 +88,7 @@ public class AisService {
     @PreDestroy
     public void destroy() {
         if (connection != null) {
-            if (connection.isOpen()) {
-                connection.close();
-            }
+            connection.close();
         }
         Iterator<Future<Long>> processIterator = processes.iterator();
         while (processIterator.hasNext()) {
