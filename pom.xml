@@ -18,13 +18,13 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <commons.lang.version>3.4</commons.lang.version>
-        <release.branch.name>uvms-2.0.5-Isildur</release.branch.name>
+        <release.branch.name>uvms-2.1.0-jessamine-boffin</release.branch.name>
         <project.scm.id>github</project.scm.id>
         <maven-release-plugin>2.5.3</maven-release-plugin>
 
-        <ais.ra.version>2.0.6-SNAPSHOT</ais.ra.version>
-        <audit.model.version>2.1.0-SNAPSHOT</audit.model.version>
-        <exchange.model.version>2.1.0-SNAPSHOT</exchange.model.version>
+        <ais.ra.version>2.0.6</ais.ra.version>
+        <audit.model.version>2.1.0</audit.model.version>
+        <exchange.model.version>2.1.0</exchange.model.version>
         <date.classifier>date</date.classifier>
     </properties>
     
