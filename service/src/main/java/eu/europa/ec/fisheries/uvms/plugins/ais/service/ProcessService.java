@@ -26,6 +26,7 @@ import javax.inject.Inject;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -191,25 +192,17 @@ public class ProcessService {
         return point;
     }
 
-    XMLGregorianCalendar getTimestamp() {
+    Date getTimestamp() {
         return getTimestamp(null);
     }
 
-    private XMLGregorianCalendar getTimestamp(Integer utcSeconds) {
-        try {
-            GregorianCalendar cal = (GregorianCalendar) GregorianCalendar.getInstance();
-            cal.setTimeInMillis(System.currentTimeMillis());
-            if (utcSeconds != null) {
-                cal.set(GregorianCalendar.SECOND, utcSeconds);
-            }
-
-            DatatypeFactory datatypeFactory = DatatypeFactory.newInstance();
-            return datatypeFactory.newXMLGregorianCalendar(cal);
-        }
-        catch (DatatypeConfigurationException e) {
-            LOG.warn("Could not generate movement report timestamp. {}", e.getMessage());
+    private Date getTimestamp(Integer utcSeconds) {
+        GregorianCalendar cal = (GregorianCalendar) GregorianCalendar.getInstance();
+        cal.setTimeInMillis(System.currentTimeMillis());
+        if (utcSeconds != null) {
+            cal.set(GregorianCalendar.SECOND, utcSeconds);
         }
 
-        return null;
+        return cal.getTime();
     }
 }
