@@ -22,6 +22,7 @@
         <project.scm.id>github</project.scm.id>
         <maven-release-plugin>2.5.3</maven-release-plugin>
 
+        <uvms.common.version>2.0.14-SNAPSHOT</uvms.common.version>
         <ais.ra.version>3.0.0-SNAPSHOT</ais.ra.version>
         <audit.model.version>3.0.0-SNAPSHOT</audit.model.version>
         <exchange.model.version>3.0.0-SNAPSHOT</exchange.model.version>

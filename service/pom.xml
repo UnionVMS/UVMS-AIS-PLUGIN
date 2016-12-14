@@ -40,6 +40,11 @@
             <version>${ais.ra.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.fisheries.uvms</groupId>
+            <artifactId>uvms-commons</artifactId>
+            <version>${uvms.common.version}</version>
+        </dependency>
     </dependencies>
     
     <build>
