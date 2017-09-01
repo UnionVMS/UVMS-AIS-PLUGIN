@@ -32,7 +32,6 @@
         <dependency>
 	        <groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>${commons.lang.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.fisheries.uvms.plugins</groupId>
@@ -44,6 +43,20 @@
             <groupId>eu.europa.ec.fisheries.uvms</groupId>
             <artifactId>uvms-commons</artifactId>
             <version>${uvms.common.version}</version>
+            <exclusions>
+            	<exclusion>
+            		<groupId>org.geotools</groupId>
+            		<artifactId>gt-geojson</artifactId>
+            	</exclusion>
+            	<exclusion>
+            	    <groupId>com.vividsolutions</groupId>
+    				<artifactId>jts</artifactId>            	
+            	</exclusion>
+            	<exclusion>
+            		<groupId>org.jboss.resteasy</groupId>
+            		<artifactId>resteasy-multipart-provider</artifactId>
+            	</exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
     
@@ -52,17 +65,7 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-ejb-plugin</artifactId>
-                <version>2.3</version>
                 <configuration>
                     <ejbVersion>3.1</ejbVersion>
                     <filterDeploymentDescriptor>true</filterDeploymentDescriptor>
