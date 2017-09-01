@@ -117,7 +117,7 @@ public class PluginMessageProducer {
 
             return message.getJMSMessageID();
         } catch (JMSException e) {
-            LOG.error("[ Error when sending message. ] {0}", e.getMessage());
+            LOG.error("[ Error when sending message. {}] {}",text, e.getMessage());
             throw new JMSException(e.getMessage());
         } finally {
         	JMSUtils.disconnectQueue(connection);
