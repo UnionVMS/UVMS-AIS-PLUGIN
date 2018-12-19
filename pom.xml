@@ -5,7 +5,7 @@
         <groupId>fish.focus.uvms.maven</groupId>
         <artifactId>uvms-pom</artifactId>
         <relativePath />
-        <version>1.12</version>
+        <version>1.20</version>
     </parent>
 
     <groupId>eu.europa.ec.fisheries.uvms.plugins</groupId>
@@ -17,10 +17,9 @@
     <properties>
         <release.branch.name>uvms-3.0.3-C3PO</release.branch.name>
 
-        <uvms.common.version>2.0.27</uvms.common.version>
-        <ais.ra.version>3.0.0</ais.ra.version>
-        <exchange.model.version>4.0.3</exchange.model.version>
-        <date.classifier>date</date.classifier>
+        <uvms.common.version>3.0.29</uvms.common.version>
+        <ais.ra.version>3.0.4</ais.ra.version>
+        <exchange.model.version>4.0.22</exchange.model.version>
     </properties>
     
     <dependencies>        
