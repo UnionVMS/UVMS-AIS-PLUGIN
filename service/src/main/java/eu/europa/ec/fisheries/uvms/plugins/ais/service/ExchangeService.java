@@ -11,6 +11,7 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
+import java.util.Date;
 import java.util.UUID;
 
 import javax.ejb.EJB;
@@ -22,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.SetReportMovementType;
+import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
 import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshallException;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
@@ -34,7 +36,7 @@ import eu.europa.ec.fisheries.uvms.plugins.ais.producer.PluginMessageProducer;
 @Stateless
 public class ExchangeService {
 
-    final static Logger LOG = LoggerFactory.getLogger(ExchangeService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExchangeService.class);
 
     @EJB
     StartupBean startupBean;
@@ -44,8 +46,8 @@ public class ExchangeService {
 
     public void sendMovementReportToExchange(SetReportMovementType reportType) {
         try {
-            String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(reportType, "AIS");
-            String messageId = producer.sendModuleMessage(text, ModuleQueue.EXCHANGE);
+            String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(reportType, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
+            producer.sendModuleMessage(text, ModuleQueue.EXCHANGE);
         } catch (ExchangeModelMarshallException e) {
             LOG.error("Couldn't map movement to setreportmovementtype");
         } catch (JMSException e) {
