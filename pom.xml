@@ -19,7 +19,7 @@
 
         <uvms.common.version>3.0.29</uvms.common.version>
         <ais.ra.version>3.0.4</ais.ra.version>
-        <exchange.model.version>4.0.22</exchange.model.version>
+        <exchange.model.version>4.0.25</exchange.model.version>
     </properties>
     
     <dependencies>        
