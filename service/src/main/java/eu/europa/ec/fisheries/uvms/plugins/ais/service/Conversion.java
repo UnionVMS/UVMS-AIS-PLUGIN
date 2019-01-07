@@ -21,6 +21,8 @@ import javax.ejb.Singleton;
 public class Conversion {
 
     public static Map<String, String> symbolMap;
+    private static Map<String, String> binaryToSymbolMap;
+
 
     @PostConstruct
     public void init() {
@@ -31,8 +33,14 @@ public class Conversion {
         return symbolMap.get("" + c);
     }
 
+    public String getSymbolForBinary(String binary) throws IllegalArgumentException {
+        if((binary == null) || (binary.length() != 6)) throw new IllegalArgumentException("binary must be 6 in length");
+        return binaryToSymbolMap.get(binary);
+    }
+
+
     private void buildSymbolMap() {
-        symbolMap = new TreeMap<String, String>();
+        symbolMap = new TreeMap<>();
         symbolMap.put("0", "000000");
         symbolMap.put("1", "000001");
         symbolMap.put("2", "000010");
@@ -97,6 +105,19 @@ public class Conversion {
         symbolMap.put("u", "111101");
         symbolMap.put("v", "111110");
         symbolMap.put("w", "111111");
+
+
+
+
+        binaryToSymbolMap = new TreeMap<>();
+        for (Map.Entry<String, String> entry : symbolMap.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            binaryToSymbolMap.put(value, key);
+        }
+
+
+
     }
 
 }

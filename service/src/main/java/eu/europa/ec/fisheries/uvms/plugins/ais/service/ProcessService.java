@@ -43,6 +43,7 @@ import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 public class ProcessService {
 
     final static Logger LOG = LoggerFactory.getLogger(ProcessService.class);
+    boolean detailLog = true;
 
     @Inject
     ExchangeService exchangeService;
@@ -137,7 +138,100 @@ public class ProcessService {
         return movement;
     }
 
+
     private MovementBaseType parseClassBEquipmentPositionReport(String sentence) throws NumberFormatException {
+
+        if(sentence == null || sentence.trim().length() < 1) {
+            return null;
+        }
+        int sentenceLength = sentence.length();
+
+        MovementBaseType movement = new MovementBaseType();
+
+        // mmsi
+        String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
+        movement.setMmsi(mmsi);
+        movement.setAssetId(getAssetId(mmsi));
+
+       // String notUsed = sentence.substring(38, 46);
+
+        // speedOverGround
+        double speedOverGround = parseSpeedOverGround(sentence, 46, 56);
+        movement.setReportedSpeed(speedOverGround);
+
+        // positionaccuracy
+        Boolean positionAccuracy = parseToBoolean(sentence, 56,57);
+        movement.setPositionAccuracy(positionAccuracy);
+
+        // position  longitude latitude
+        movement.setPosition(getMovementPoint(parseCoordinate(sentence, 57, 85), parseCoordinate(sentence, 85, 112)));
+
+        // course
+        movement.setReportedCourse(parseCourseOverGround(sentence, 112, 124));
+
+        // trueHeading
+        String trueHeadingStr = sentence.substring(124,133);
+        Integer trueHeading = parseToNumertic("TrueHeading", trueHeadingStr);
+        movement.setTrueHeading(trueHeading);
+
+        // timestamp
+        movement.setPositionTime(getTimestamp(Integer.parseInt(sentence.substring(133, 139), 2)));
+
+        // not used
+        // String notUsed2 = sentence.substring(139, 141);
+
+        // CS Unit
+        Boolean csUnit = parseToBoolean(sentence, 141,142);
+        movement.setCsUnit(csUnit);
+
+        // Display flag
+        Boolean displayFlag = parseToBoolean(sentence, 142,143);
+        movement.setDisplayFlag(displayFlag);
+
+        // DSC Flag
+        Boolean dscFlag = parseToBoolean(sentence, 143,144);
+        movement.setDscFlag(dscFlag);
+
+        // band flag
+        Boolean band = parseToBoolean(sentence, 144,145);
+        movement.setBandFlag(band);
+
+        // message22 flag
+        Boolean message22 = parseToBoolean(sentence, 145,146);
+        movement.setMessage22(message22);
+
+        // Assigned
+        Boolean assigned =  parseToBoolean(sentence, 146,147);
+        movement.setAssigned(assigned);
+
+        // Raim flag
+        Boolean raimFlag = parseToBoolean(sentence, 147,148);
+        movement.setRaimFlag(raimFlag);
+
+        //
+        String radioStatusStr = sentence.substring(148,168);
+        Integer radioStatus = parseToNumertic("RadioStatus", radioStatusStr);
+        movement.setRadioStatus(radioStatus);
+
+        movement.setSource(MovementSourceType.AIS);
+        movement.setComChannelType(MovementComChannelType.NAF);
+
+        return movement;
+    }
+
+    private Boolean parseToBoolean(String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException
+    {
+        String str = sentence.substring(startPosInclusive, endPosExclusive);
+        if(str == null ) return null;
+        return str.equals("1");
+    }
+
+
+
+
+
+
+    private MovementBaseType parseClassBEquipmentPositionReportOLD(String sentence) throws NumberFormatException {
         MovementBaseType movement = new MovementBaseType();
         String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
         movement.setMmsi(mmsi);
@@ -210,4 +304,18 @@ public class ProcessService {
 
         return cal.getTime();
     }
+
+    private Integer parseToNumertic(String fieldName , String str) throws NumberFormatException
+    {
+        try{
+            return Integer.parseInt(str,2);
+        }
+        catch(NumberFormatException e){
+            LOG.error(fieldName + " is not numeric", e);
+            throw e;
+        }
+    }
+
+
+
 }
