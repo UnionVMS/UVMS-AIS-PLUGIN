@@ -33,8 +33,8 @@ public class Conversion {
         return symbolMap.get("" + c);
     }
 
-    public String getSymbolForBinary(String binary) throws Exception {
-        if((binary == null) || (binary.length() != 6)) throw new Exception("binary must be 6 in length");
+    public String getSymbolForBinary(String binary) throws IllegalArgumentException {
+        if((binary == null) || (binary.length() != 6)) throw new IllegalArgumentException("binary must be 6 in length");
         return binaryToSymbolMap.get(binary);
     }
 
