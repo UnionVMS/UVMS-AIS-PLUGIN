@@ -94,19 +94,19 @@ public class PluginNameEventBusListener implements MessageListener {
                     responseMessage = ExchangePluginResponseMapper.mapToSetReportResponse(startup.getRegisterClassName(), setReportAck);
                     break;
                 case START:
-                    StartRequest startRequest = JAXBMarshaller.unmarshallTextMessage(textMessage, StartRequest.class);
+                    JAXBMarshaller.unmarshallTextMessage(textMessage, StartRequest.class);
                     AcknowledgeTypeType start = service.start();
                     AcknowledgeType startAck = ExchangePluginResponseMapper.mapToAcknowlegeType(textMessage.getJMSMessageID(), start);
                     responseMessage = ExchangePluginResponseMapper.mapToStartResponse(startup.getRegisterClassName(), startAck);
                     break;
                 case STOP:
-                    StopRequest stopRequest = JAXBMarshaller.unmarshallTextMessage(textMessage, StopRequest.class);
+                    JAXBMarshaller.unmarshallTextMessage(textMessage, StopRequest.class);
                     AcknowledgeTypeType stop = service.stop();
                     AcknowledgeType stopAck = ExchangePluginResponseMapper.mapToAcknowlegeType(textMessage.getJMSMessageID(), stop);
                     responseMessage = ExchangePluginResponseMapper.mapToStopResponse(startup.getRegisterClassName(), stopAck);
                     break;
                 case PING:
-                    PingRequest pingRequest = JAXBMarshaller.unmarshallTextMessage(textMessage, PingRequest.class);
+                    JAXBMarshaller.unmarshallTextMessage(textMessage, PingRequest.class);
                     responseMessage = ExchangePluginResponseMapper.mapToPingResponse(startup.isEnabled(), startup.isEnabled());
                     break;
                 default:
