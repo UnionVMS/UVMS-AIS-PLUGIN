@@ -46,146 +46,64 @@ public class PluginMessageProducer {
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void sendResponseMessage(String text, TextMessage requestMessage) throws JMSException {
 
-        Connection connection = null;
-        Session session = null;
-        javax.jms.MessageProducer producer = null;
-        try {
-            connection = getConnection();
-            session = JMSUtils.connectToQueue(connection);
+        try (Connection connection = getConnection();
+             Session session = JMSUtils.connectToQueue(connection);
+             MessageProducer producer = session.createProducer(requestMessage.getJMSReplyTo())
+             ) {
+
             TextMessage message = session.createTextMessage();
             message.setJMSDestination(requestMessage.getJMSReplyTo());
             message.setJMSCorrelationID(requestMessage.getJMSMessageID());
             message.setText(text);
 
-            producer = getProducer(session, requestMessage.getJMSReplyTo());
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
             producer.send(message);
-
         } catch (JMSException e) {
-            LOG.error("[ Error when sending jms message. {}] {}", text, e.getMessage());
-            throw new JMSException(e.getMessage());
-        } finally {
-            if (producer != null) {
-                try {
-                    producer.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
-            if (session != null) {
-                try {
-                    session.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
+            LOG.error(e.toString(),e);
+            throw e;
         }
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public String sendModuleMessage(String text, ModuleQueue queue) throws JMSException {
+    public void sendModuleMessage(String text, ModuleQueue queue) throws JMSException {
 
-        Connection connection = null;
-        Session session = null;
-        javax.jms.MessageProducer producer = null;
+        try (Connection connection = getConnection();
+             Session session = JMSUtils.connectToQueue(connection);
+             MessageProducer producer =  getProducer(session, exchangeQueue)
+        ) {
+            switch(queue) {
 
-        try {
-            connection = getConnection();
-            session = JMSUtils.connectToQueue(connection);
-
-            TextMessage message = session.createTextMessage();
-            message.setText(text);
-
-            switch (queue) {
                 case EXCHANGE:
-                    producer = getProducer(session, exchangeQueue);
+                    TextMessage message = session.createTextMessage();
+                    message.setText(text);
+                    producer.setDeliveryMode(DeliveryMode.PERSISTENT);
                     producer.send(message);
                     break;
                 default:
                     LOG.error("[ Sending Queue is not implemented ]");
                     break;
             }
-
-            return message.getJMSMessageID();
         } catch (JMSException e) {
-            LOG.error("[ Error when sending data source message. {}] {}", text, e.getMessage());
-            throw new JMSException(e.getMessage());
-        } finally {
-            if (producer != null) {
-                try {
-                    producer.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
-            if (session != null) {
-                try {
-                    session.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
+            LOG.error(e.toString(),e);
+            throw e;
         }
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public String sendEventBusMessage(String text, String serviceName) throws JMSException {
 
-        Connection connection = null;
-        Session session = null;
-        javax.jms.MessageProducer producer = null;
-
-        try {
-            connection = getConnection();
-            session = JMSUtils.connectToQueue(connection);
-
+        try (Connection connection = getConnection();
+             Session session = JMSUtils.connectToQueue(connection);
+             MessageProducer producer =  getProducer(session, eventBus)
+        ) {
             TextMessage message = session.createTextMessage();
             message.setText(text);
             message.setStringProperty(ExchangeModelConstants.SERVICE_NAME, serviceName);
-
-
-            producer = getProducer(session, eventBus);
             producer.send(message);
-
             return message.getJMSMessageID();
         } catch (JMSException e) {
-            LOG.error("[ Error when sending message. {}] {}", text, e.getMessage());
-            throw new JMSException(e.getMessage());
-        } finally {
-            if (producer != null) {
-                try {
-                    producer.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
-            if (session != null) {
-                try {
-                    session.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (JMSException je) {
-                    // well  . . .
-                }
-            }
+            LOG.error(e.toString(),e);
+            throw e;
         }
     }
 
