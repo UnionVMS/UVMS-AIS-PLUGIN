@@ -128,10 +128,44 @@ public class ProcessService {
         String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
         movement.setMmsi(mmsi);
         movement.setAssetId(getAssetId(mmsi));
+
+        // NavigationStatus
+        String navigationStatus = sentence.substring(38,42);
+        movement.setNavigationStatus(navigationStatus);
+
+        // NavigationStatus
+        String rateOfTurn = sentence.substring(42,50);
+        movement.setRateOfTurn(rateOfTurn);
+
         movement.setReportedSpeed(parseSpeedOverGround(sentence, 50, 60));
+
+        // positionaccuracy
+        Boolean positionAccuracy = parseToBoolean(sentence, 60,61);
+        movement.setPositionAccuracy(positionAccuracy);
+
         movement.setPosition(getMovementPoint(parseCoordinate(sentence, 61, 89), parseCoordinate(sentence, 89, 116)));
         movement.setReportedCourse(parseCourseOverGround(sentence, 116, 128));
+
+        // trueHeading
+        String trueHeadingStr = sentence.substring(128,137);
+        Integer trueHeading = parseToNumertic("TrueHeading", trueHeadingStr);
+        movement.setTrueHeading(trueHeading);
+
         movement.setPositionTime(getTimestamp(Integer.parseInt(sentence.substring(137, 143), 2)));
+
+        // maneuverIndicator
+        String maneuverIndicator = sentence.substring(143,145);
+        movement.setManeuverIndicator(maneuverIndicator);
+
+        // Raim flag
+        Boolean raimFlag = parseToBoolean(sentence, 148,149);
+        movement.setRaimFlag(raimFlag);
+
+        //
+        String radioStatusStr = sentence.substring(149,168);
+        Integer radioStatus = parseToNumertic("RadioStatus", radioStatusStr);
+        movement.setRadioStatus(radioStatus);
+
         movement.setSource(MovementSourceType.AIS);
         movement.setComChannelType(MovementComChannelType.NAF);
 
@@ -144,16 +178,12 @@ public class ProcessService {
         if(sentence == null || sentence.trim().length() < 1) {
             return null;
         }
-        int sentenceLength = sentence.length();
-
         MovementBaseType movement = new MovementBaseType();
 
         // mmsi
         String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
         movement.setMmsi(mmsi);
         movement.setAssetId(getAssetId(mmsi));
-
-       // String notUsed = sentence.substring(38, 46);
 
         // speedOverGround
         double speedOverGround = parseSpeedOverGround(sentence, 46, 56);
@@ -176,9 +206,6 @@ public class ProcessService {
 
         // timestamp
         movement.setPositionTime(getTimestamp(Integer.parseInt(sentence.substring(133, 139), 2)));
-
-        // not used
-        // String notUsed2 = sentence.substring(139, 141);
 
         // CS Unit
         Boolean csUnit = parseToBoolean(sentence, 141,142);

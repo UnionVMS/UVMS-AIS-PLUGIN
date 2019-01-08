@@ -11,29 +11,18 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.producer;
 
+import eu.europa.ec.fisheries.uvms.commons.message.impl.JMSUtils;
+import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstants;
+import eu.europa.ec.fisheries.uvms.plugins.ais.constants.ModuleQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.PostConstruct;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.DeliveryMode;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.MessageProducer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.jms.Topic;
-
-import eu.europa.ec.fisheries.uvms.commons.message.api.MessageConstants;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import eu.europa.ec.fisheries.uvms.commons.message.impl.JMSUtils;
-import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstants;
-import eu.europa.ec.fisheries.uvms.plugins.ais.constants.ModuleQueue;
+import javax.jms.*;
 
 @Stateless
 @LocalBean
@@ -57,10 +46,10 @@ public class PluginMessageProducer {
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void sendResponseMessage(String text, TextMessage requestMessage) throws JMSException {
 
-    	Connection connection = null;
+        Connection connection = null;
         Session session = null;
         javax.jms.MessageProducer producer = null;
-    	try {
+        try {
             connection = getConnection();
             session = JMSUtils.connectToQueue(connection);
             TextMessage message = session.createTextMessage();
@@ -72,10 +61,30 @@ public class PluginMessageProducer {
             producer.send(message);
 
         } catch (JMSException e) {
-            LOG.error("[ Error when sending jms message. {}] {}",text, e.getMessage());
+            LOG.error("[ Error when sending jms message. {}] {}", text, e.getMessage());
             throw new JMSException(e.getMessage());
         } finally {
-            JMSUtils.disconnectQueue(connection, session, producer);
+            if (producer != null) {
+                try {
+                    producer.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
         }
     }
 
@@ -86,7 +95,7 @@ public class PluginMessageProducer {
         Session session = null;
         javax.jms.MessageProducer producer = null;
 
-    	try {
+        try {
             connection = getConnection();
             session = JMSUtils.connectToQueue(connection);
 
@@ -105,21 +114,41 @@ public class PluginMessageProducer {
 
             return message.getJMSMessageID();
         } catch (JMSException e) {
-            LOG.error("[ Error when sending data source message. {}] {}",text, e.getMessage());
+            LOG.error("[ Error when sending data source message. {}] {}", text, e.getMessage());
             throw new JMSException(e.getMessage());
         } finally {
-            JMSUtils.disconnectQueue(connection, session, producer);
+            if (producer != null) {
+                try {
+                    producer.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
         }
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public String sendEventBusMessage(String text, String serviceName) throws JMSException {
 
-    	Connection connection = null;
+        Connection connection = null;
         Session session = null;
         javax.jms.MessageProducer producer = null;
 
-    	try {
+        try {
             connection = getConnection();
             session = JMSUtils.connectToQueue(connection);
 
@@ -133,10 +162,30 @@ public class PluginMessageProducer {
 
             return message.getJMSMessageID();
         } catch (JMSException e) {
-            LOG.error("[ Error when sending message. {}] {}",text, e.getMessage());
+            LOG.error("[ Error when sending message. {}] {}", text, e.getMessage());
             throw new JMSException(e.getMessage());
         } finally {
-            JMSUtils.disconnectQueue(connection, session, producer);
+            if (producer != null) {
+                try {
+                    producer.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException je) {
+                    // well  . . .
+                }
+            }
         }
     }
 
@@ -157,12 +206,6 @@ public class PluginMessageProducer {
         producer.setDeliveryMode(DeliveryMode.PERSISTENT);
         return producer;
     }
-
-
-
-
-
-
 
 
 }
