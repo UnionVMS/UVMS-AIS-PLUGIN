@@ -11,30 +11,24 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.concurrent.Future;
+import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetId;
+import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdList;
+import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdType;
+import eu.europa.ec.fisheries.schema.exchange.movement.v1.*;
+import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
+import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetId;
-import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdList;
-import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdType;
-import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
-import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementComChannelType;
-import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementPoint;
-import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementSourceType;
-import eu.europa.ec.fisheries.schema.exchange.movement.v1.SetReportMovementType;
-import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
-import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  **/
@@ -85,6 +79,7 @@ public class ProcessService {
                 case '1': // message id 1
                 case '2': // message id 2
                 case 'B': // message id 18
+                case 'H': // message id 24
                     for (int i = 0; i < symbolString.length(); i++) {
                         sb.append(conversion.getBinaryForSymbol(symbolString.charAt(i)));
                     }
@@ -102,17 +97,20 @@ public class ProcessService {
         }
 
         try {
-            int id = Integer.parseInt(sentence.substring(0, 6), 2);
+            int messageType = Integer.parseInt(sentence.substring(0, 6), 2);
             // Check that the type of msg is a valid postion msg print for info. Should already be handled.
             LOG.info("Sentence: {}", sentence);
-            switch (id) {
+            switch (messageType) {
                 case 0:
                 case 1:
                 case 2:
-                    return parseReport(sentence);
+                    return parseReportType_1_2_3(messageType, sentence);
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
-                    return parseClassBEquipmentPositionReport(sentence);
+                    return parseReportType_18(messageType, sentence);
+                case 24:
+                    // MSG ID 24
+                    return parseReportType_24(messageType, sentence);
                 default:
                     return null;
             }
@@ -123,47 +121,84 @@ public class ProcessService {
         return null;
     }
 
-    private MovementBaseType parseReport(String sentence) {
+    private MovementBaseType parseReportType_24(Integer messageType, String sentence) throws NumberFormatException {
+
+        if (sentence == null || sentence.trim().length() < 1) {
+            return null;
+        }
         MovementBaseType movement = new MovementBaseType();
+        movement.setAisMessageType(messageType);
+
+        String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
+        movement.setMmsi(mmsi);
+        movement.setAssetId(getAssetId(mmsi));
+
+        // if partNumber == 0   the rest of the message is interpreted as a Part A
+        // if partNumber == 1   the rest of the message is interpreted as a Part B
+        // values of 2 and 3 is not allowed
+        Integer partNumber = parseToNumeric("Part Number", sentence, 38, 40);
+        movement.setPartNumber(partNumber);
+        if(partNumber.equals(0)) {
+            movement.setAssetName(sentence.substring(40,160));
+        }
+        else if(partNumber.equals(1)) {
+            movement.setShipType(sentence.substring(40,48));
+            movement.setVendorId(sentence.substring(48,66));
+            movement.setUnitModelCode(Integer.parseInt(sentence.substring(66, 70), 2));
+            movement.setSerialNumber(sentence.substring(70, 90));
+            movement.setCallSign(sentence.substring(90, 132));
+            movement.setDimensionToBow(Integer.parseInt(sentence.substring(132, 141), 2));
+            movement.setDimensionToStern(Integer.parseInt(sentence.substring(141, 150), 2));
+            movement.setDimensionToPort(Integer.parseInt(sentence.substring(150, 156), 2));
+            movement.setDimensionToStarBoard(Integer.parseInt(sentence.substring(156, 162), 2));
+            movement.setMotherShipMMSI(String.valueOf(Integer.parseInt(sentence.substring(132, 162), 2)));
+        }
+        return movement;
+    }
+
+
+    private MovementBaseType parseReportType_1_2_3(Integer messageType, String sentence) {
+        MovementBaseType movement = new MovementBaseType();
+        movement.setAisMessageType(messageType);
         String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
         movement.setMmsi(mmsi);
         movement.setAssetId(getAssetId(mmsi));
 
         // NavigationStatus
-        String navigationStatus = sentence.substring(38,42);
+        String navigationStatus = sentence.substring(38, 42);
         movement.setNavigationStatus(navigationStatus);
 
-        // NavigationStatus
-        String rateOfTurn = sentence.substring(42,50);
+        // rateOfTurn
+        String rateOfTurn = sentence.substring(42, 50);
         movement.setRateOfTurn(rateOfTurn);
 
         movement.setReportedSpeed(parseSpeedOverGround(sentence, 50, 60));
 
         // positionaccuracy
-        Boolean positionAccuracy = parseToBoolean(sentence, 60,61);
+        Boolean positionAccuracy = parseToBoolean(sentence, 60, 61);
         movement.setPositionAccuracy(positionAccuracy);
 
         movement.setPosition(getMovementPoint(parseCoordinate(sentence, 61, 89), parseCoordinate(sentence, 89, 116)));
         movement.setReportedCourse(parseCourseOverGround(sentence, 116, 128));
 
         // trueHeading
-        String trueHeadingStr = sentence.substring(128,137);
-        Integer trueHeading = parseToNumertic("TrueHeading", trueHeadingStr);
+        String trueHeadingStr = sentence.substring(128, 137);
+        Integer trueHeading = parseToNumeric("TrueHeading", trueHeadingStr);
         movement.setTrueHeading(trueHeading);
 
         movement.setPositionTime(getTimestamp(Integer.parseInt(sentence.substring(137, 143), 2)));
 
         // maneuverIndicator
-        String maneuverIndicator = sentence.substring(143,145);
+        String maneuverIndicator = sentence.substring(143, 145);
         movement.setManeuverIndicator(maneuverIndicator);
 
         // Raim flag
-        Boolean raimFlag = parseToBoolean(sentence, 148,149);
+        Boolean raimFlag = parseToBoolean(sentence, 148, 149);
         movement.setRaimFlag(raimFlag);
 
         //
-        String radioStatusStr = sentence.substring(149,168);
-        Integer radioStatus = parseToNumertic("RadioStatus", radioStatusStr);
+        String radioStatusStr = sentence.substring(149, 168);
+        Integer radioStatus = parseToNumeric("RadioStatus", radioStatusStr);
         movement.setRadioStatus(radioStatus);
 
         movement.setSource(MovementSourceType.AIS);
@@ -173,12 +208,13 @@ public class ProcessService {
     }
 
 
-    private MovementBaseType parseClassBEquipmentPositionReport(String sentence) throws NumberFormatException {
+    private MovementBaseType parseReportType_18(Integer messageType, String sentence) throws NumberFormatException {
 
-        if(sentence == null || sentence.trim().length() < 1) {
+        if (sentence == null || sentence.trim().length() < 1) {
             return null;
         }
         MovementBaseType movement = new MovementBaseType();
+        movement.setAisMessageType(messageType);
 
         // mmsi
         String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
@@ -190,7 +226,7 @@ public class ProcessService {
         movement.setReportedSpeed(speedOverGround);
 
         // positionaccuracy
-        Boolean positionAccuracy = parseToBoolean(sentence, 56,57);
+        Boolean positionAccuracy = parseToBoolean(sentence, 56, 57);
         movement.setPositionAccuracy(positionAccuracy);
 
         // position  longitude latitude
@@ -200,44 +236,44 @@ public class ProcessService {
         movement.setReportedCourse(parseCourseOverGround(sentence, 112, 124));
 
         // trueHeading
-        String trueHeadingStr = sentence.substring(124,133);
-        Integer trueHeading = parseToNumertic("TrueHeading", trueHeadingStr);
+        String trueHeadingStr = sentence.substring(124, 133);
+        Integer trueHeading = parseToNumeric("TrueHeading", trueHeadingStr);
         movement.setTrueHeading(trueHeading);
 
         // timestamp
         movement.setPositionTime(getTimestamp(Integer.parseInt(sentence.substring(133, 139), 2)));
 
         // CS Unit
-        Boolean csUnit = parseToBoolean(sentence, 141,142);
+        Boolean csUnit = parseToBoolean(sentence, 141, 142);
         movement.setCsUnit(csUnit);
 
         // Display flag
-        Boolean displayFlag = parseToBoolean(sentence, 142,143);
+        Boolean displayFlag = parseToBoolean(sentence, 142, 143);
         movement.setDisplayFlag(displayFlag);
 
         // DSC Flag
-        Boolean dscFlag = parseToBoolean(sentence, 143,144);
+        Boolean dscFlag = parseToBoolean(sentence, 143, 144);
         movement.setDscFlag(dscFlag);
 
         // band flag
-        Boolean band = parseToBoolean(sentence, 144,145);
+        Boolean band = parseToBoolean(sentence, 144, 145);
         movement.setBandFlag(band);
 
         // message22 flag
-        Boolean message22 = parseToBoolean(sentence, 145,146);
+        Boolean message22 = parseToBoolean(sentence, 145, 146);
         movement.setMessage22(message22);
 
         // Assigned
-        Boolean assigned =  parseToBoolean(sentence, 146,147);
+        Boolean assigned = parseToBoolean(sentence, 146, 147);
         movement.setAssigned(assigned);
 
         // Raim flag
-        Boolean raimFlag = parseToBoolean(sentence, 147,148);
+        Boolean raimFlag = parseToBoolean(sentence, 147, 148);
         movement.setRaimFlag(raimFlag);
 
         //
-        String radioStatusStr = sentence.substring(148,168);
-        Integer radioStatus = parseToNumertic("RadioStatus", radioStatusStr);
+        String radioStatusStr = sentence.substring(148, 168);
+        Integer radioStatus = parseToNumeric("RadioStatus", radioStatusStr);
         movement.setRadioStatus(radioStatus);
 
         movement.setSource(MovementSourceType.AIS);
@@ -246,31 +282,10 @@ public class ProcessService {
         return movement;
     }
 
-    private Boolean parseToBoolean(String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException
-    {
+    private Boolean parseToBoolean(String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException {
         String str = sentence.substring(startPosInclusive, endPosExclusive);
-        if(str == null ) return null;
+        if (str == null) return null;
         return str.equals("1");
-    }
-
-
-
-
-
-
-    private MovementBaseType parseClassBEquipmentPositionReportOLD(String sentence) throws NumberFormatException {
-        MovementBaseType movement = new MovementBaseType();
-        String mmsi = String.valueOf(Integer.parseInt(sentence.substring(8, 38), 2));
-        movement.setMmsi(mmsi);
-        movement.setAssetId(getAssetId(mmsi));
-        movement.setReportedSpeed(parseSpeedOverGround(sentence, 46, 56));
-        movement.setPosition(getMovementPoint(parseCoordinate(sentence, 57, 85), parseCoordinate(sentence, 85, 112)));
-        movement.setReportedCourse(parseCourseOverGround(sentence, 112, 124));
-        movement.setPositionTime(getTimestamp(Integer.parseInt(sentence.substring(133, 139), 2)));
-        movement.setSource(MovementSourceType.AIS);
-        movement.setComChannelType(MovementComChannelType.NAF);
-
-        return movement;
     }
 
     private Double parseCoordinate(String data, int stringStart, int stringEnd) throws NumberFormatException {
@@ -332,17 +347,25 @@ public class ProcessService {
         return cal.getTime();
     }
 
-    private Integer parseToNumertic(String fieldName , String str) throws NumberFormatException
-    {
-        try{
-            return Integer.parseInt(str,2);
-        }
-        catch(NumberFormatException e){
+    private Integer parseToNumeric(String fieldName, String str) throws NumberFormatException {
+        try {
+            return Integer.parseInt(str, 2);
+        } catch (NumberFormatException e) {
             LOG.error(fieldName + " is not numeric", e);
             throw e;
         }
     }
 
+    private Integer parseToNumeric(String fieldName, String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException ,IndexOutOfBoundsException{
+
+        try {
+            String str = sentence.substring(startPosInclusive, endPosExclusive);
+            return Integer.parseInt(str, 2);
+        } catch (NumberFormatException | IndexOutOfBoundsException e) {
+            LOG.error(fieldName + " parsing error", e);
+            throw e;
+        }
+    }
 
 
 }
