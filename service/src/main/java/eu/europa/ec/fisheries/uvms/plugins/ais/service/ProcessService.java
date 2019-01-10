@@ -80,7 +80,7 @@ public class ProcessService {
              MessageProducer producer = session.createProducer(exchangeQueue)
         ) {
             producer.setDeliveryMode(DeliveryMode.PERSISTENT);
-            
+
             // emit
 
             for (MovementBaseType movement : downSamplingControl.values()) {
@@ -133,7 +133,7 @@ public class ProcessService {
         try {
             int messageType = Integer.parseInt(sentence.substring(0, 6), 2);
             // Check that the type of msg is a valid postion msg print for info. Should already be handled.
-            LOG.info("Sentence: {}", sentence);
+            LOG.debug("Sentence: {}", sentence);
             switch (messageType) {
                 case 0:
                 case 1:
