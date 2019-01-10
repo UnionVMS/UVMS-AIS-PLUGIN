@@ -16,18 +16,21 @@ import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdList;
 import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdType;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.*;
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
+import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshallException;
+import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Resource;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
+import javax.jms.*;
+import javax.jms.Queue;
+import java.util.*;
 import java.util.concurrent.Future;
 
 /**
@@ -37,10 +40,12 @@ import java.util.concurrent.Future;
 public class ProcessService {
 
     final static Logger LOG = LoggerFactory.getLogger(ProcessService.class);
-    boolean detailLog = true;
 
-    @Inject
-    ExchangeService exchangeService;
+    @Resource(mappedName = "java:/ConnectionFactory")
+    private ConnectionFactory connectionFactory;
+
+    @Resource(mappedName = "java:/jms/queue/UVMSExchangeEvent")
+    private Queue exchangeQueue;
 
     @Inject
     StartupBean startUp;
@@ -48,24 +53,53 @@ public class ProcessService {
     @Inject
     private Conversion conversion;
 
+
     @Asynchronous
     public Future<Long> processMessages(List<String> sentences) {
+
+        Map<String, MovementBaseType> downSamplingControl = new HashMap<>();
+
         long start = System.currentTimeMillis();
+        // collect
         for (String sentence : sentences) {
             String binary = symbolToBinary(sentence);
             if (binary != null) {
                 try {
                     MovementBaseType movement = binaryToMovement(binary);
                     if (movement != null) {
-                        saveData(movement);
+                        downSamplingControl.put(movement.getMmsi(), movement);
                     }
-                } catch (NumberFormatException e) {
-                    LOG.info("Got badly formed message: {}", binary);
+                } catch (Exception e) {
+                    LOG.warn(e.toString(), e);
+                }
+            }
+        }
+
+        try (Connection connection = connectionFactory.createConnection();
+             Session session = connection.createSession(false, 1);
+             MessageProducer producer = session.createProducer(exchangeQueue)
+        ) {
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+
+            // emit
+
+            for (MovementBaseType movement : downSamplingControl.values()) {
+                try {
+                    SetReportMovementType movementReport = getMovementReport(movement);
+                    String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
+                    TextMessage message = session.createTextMessage();
+                    message.setText(text);
+                    producer.send(message);
+                } catch (ExchangeModelMarshallException e) {
+                    LOG.error("Couldn't map movement to setreportmovementtype");
                 } catch (Exception e) {
                     LOG.info("//NOP: {}", e.getLocalizedMessage());
                 }
             }
+        } catch (JMSException e) {
+            LOG.error("couldn't send movement");
         }
+
         LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
         return new AsyncResult<Long>(new Long(System.currentTimeMillis() - start));
     }
@@ -99,7 +133,7 @@ public class ProcessService {
         try {
             int messageType = Integer.parseInt(sentence.substring(0, 6), 2);
             // Check that the type of msg is a valid postion msg print for info. Should already be handled.
-            LOG.info("Sentence: {}", sentence);
+            LOG.debug("Sentence: {}", sentence);
             switch (messageType) {
                 case 0:
                 case 1:
@@ -138,12 +172,11 @@ public class ProcessService {
         // values of 2 and 3 is not allowed
         Integer partNumber = parseToNumeric("Part Number", sentence, 38, 40);
         movement.setPartNumber(partNumber);
-        if(partNumber.equals(0)) {
-            movement.setAssetName(sentence.substring(40,160));
-        }
-        else if(partNumber.equals(1)) {
-            movement.setShipType(sentence.substring(40,48));
-            movement.setVendorId(sentence.substring(48,66));
+        if (partNumber.equals(0)) {
+            movement.setAssetName(sentence.substring(40, 160));
+        } else if (partNumber.equals(1)) {
+            movement.setShipType(sentence.substring(40, 48));
+            movement.setVendorId(sentence.substring(48, 66));
             movement.setUnitModelCode(Integer.parseInt(sentence.substring(66, 70), 2));
             movement.setSerialNumber(sentence.substring(70, 90));
             movement.setCallSign(sentence.substring(90, 132));
@@ -303,11 +336,6 @@ public class ProcessService {
         return speedOverGround.doubleValue() / 10;
     }
 
-    void saveData(MovementBaseType movement) {
-        SetReportMovementType movementReport = getMovementReport(movement);
-        exchangeService.sendMovementReportToExchange(movementReport);
-    }
-
     private AssetId getAssetId(String mmsi) {
         AssetId assetId = new AssetId();
         AssetIdList assetIdList = new AssetIdList();
@@ -356,7 +384,7 @@ public class ProcessService {
         }
     }
 
-    private Integer parseToNumeric(String fieldName, String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException ,IndexOutOfBoundsException{
+    private Integer parseToNumeric(String fieldName, String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException, IndexOutOfBoundsException {
 
         try {
             String str = sentence.substring(startPosInclusive, endPosExclusive);

@@ -43,7 +43,6 @@ public class PluginMessageProducer {
         eventBus = JMSUtils.lookupTopic(ExchangeModelConstants.PLUGIN_EVENTBUS);
     }
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void sendResponseMessage(String text, TextMessage requestMessage) throws JMSException {
 
         try (Connection connection = getConnection();
@@ -64,32 +63,10 @@ public class PluginMessageProducer {
         }
     }
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public void sendModuleMessage(String text, ModuleQueue queue) throws JMSException {
 
-        try (Connection connection = getConnection();
-             Session session = JMSUtils.connectToQueue(connection);
-             MessageProducer producer =  getProducer(session, exchangeQueue)
-        ) {
-            switch(queue) {
 
-                case EXCHANGE:
-                    TextMessage message = session.createTextMessage();
-                    message.setText(text);
-                    producer.setDeliveryMode(DeliveryMode.PERSISTENT);
-                    producer.send(message);
-                    break;
-                default:
-                    LOG.error("[ Sending Queue is not implemented ]");
-                    break;
-            }
-        } catch (JMSException e) {
-            LOG.error(e.toString(),e);
-            throw e;
-        }
-    }
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+
     public String sendEventBusMessage(String text, String serviceName) throws JMSException {
 
         try (Connection connection = getConnection();
