@@ -29,10 +29,8 @@ import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.jms.*;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.UUID;
+import javax.jms.Queue;
+import java.util.*;
 import java.util.concurrent.Future;
 
 /**
@@ -46,7 +44,7 @@ public class ProcessService {
     @Resource(mappedName = "java:/ConnectionFactory")
     private ConnectionFactory connectionFactory;
 
-    @Resource(mappedName = "jms/queue/UVMSExchangeEvent")
+    @Resource(mappedName = "java:/jms/queue/UVMSExchangeEvent")
     private Queue exchangeQueue;
 
     @Inject
@@ -58,46 +56,52 @@ public class ProcessService {
 
     @Asynchronous
     public Future<Long> processMessages(List<String> sentences) {
+
+        Map<String, MovementBaseType> downSamplingControl = new HashMap<>();
+
         long start = System.currentTimeMillis();
+        // collect
+        for (String sentence : sentences) {
+            String binary = symbolToBinary(sentence);
+            if (binary != null) {
+                try {
+                    MovementBaseType movement = binaryToMovement(binary);
+                    if (movement != null) {
+                        downSamplingControl.put(movement.getMmsi(), movement);
+                    }
+                } catch (Exception e) {
+                    LOG.warn(e.toString(), e);
+                }
+            }
+        }
 
         try (Connection connection = connectionFactory.createConnection();
              Session session = connection.createSession(false, 1);
              MessageProducer producer = session.createProducer(exchangeQueue)
         ) {
             producer.setDeliveryMode(DeliveryMode.PERSISTENT);
-            for (String sentence : sentences) {
-                String binary = symbolToBinary(sentence);
-                if (binary != null) {
-                    try {
-                        MovementBaseType movement = binaryToMovement(binary);
-                        if (movement != null) {
-                            SetReportMovementType movementReport = getMovementReport(movement);
-                            String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
-                            TextMessage message = session.createTextMessage();
-                            message.setText(text);
-                            producer.send(message);
-                        }
-                    } catch (NumberFormatException e) {
-                        LOG.info("Got badly formed message: {}", binary);
-                    } catch (ExchangeModelMarshallException e) {
-                        LOG.error("Couldn't map movement to setreportmovementtype");
-                    } catch (JMSException e) {
-                        LOG.error("couldn't send movement");
-                        // TODO  this should go to an errortable or errorqueue instead
-                        startUp.getCachedMovement().put(UUID.randomUUID().toString(), getMovementReport(binaryToMovement(binary)));
-                    } catch (Exception e) {
-                        LOG.info("//NOP: {}", e.getLocalizedMessage());
-                    }
+            
+            // emit
+
+            for (MovementBaseType movement : downSamplingControl.values()) {
+                try {
+                    SetReportMovementType movementReport = getMovementReport(movement);
+                    String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
+                    TextMessage message = session.createTextMessage();
+                    message.setText(text);
+                    producer.send(message);
+                } catch (ExchangeModelMarshallException e) {
+                    LOG.error("Couldn't map movement to setreportmovementtype");
+                } catch (Exception e) {
+                    LOG.info("//NOP: {}", e.getLocalizedMessage());
                 }
             }
-
         } catch (JMSException e) {
-            LOG.error(e.toString(), e);
-        } finally {
-            LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
-            return new AsyncResult<Long>(new Long(System.currentTimeMillis() - start));
-
+            LOG.error("couldn't send movement");
         }
+
+        LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
+        return new AsyncResult<Long>(new Long(System.currentTimeMillis() - start));
     }
 
     private String symbolToBinary(String symbolString) {
