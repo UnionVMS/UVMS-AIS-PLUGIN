@@ -16,22 +16,23 @@ import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdList;
 import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdType;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.*;
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
-import eu.europa.ec.fisheries.uvms.commons.message.impl.JMSUtils;
+import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshallException;
+import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Resource;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
+import javax.jms.*;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Future;
 
 /**
@@ -40,14 +41,13 @@ import java.util.concurrent.Future;
 @Stateless
 public class ProcessService {
 
+    final static Logger LOG = LoggerFactory.getLogger(ProcessService.class);
+
+    @Resource(mappedName = "java:/ConnectionFactory")
     private ConnectionFactory connectionFactory;
 
-
-    final static Logger LOG = LoggerFactory.getLogger(ProcessService.class);
-    boolean detailLog = true;
-
-    @Inject
-    ExchangeService exchangeService;
+    @Resource(mappedName = "jms/queue/UVMSExchangeEvent")
+    private Queue exchangeQueue;
 
     @Inject
     StartupBean startUp;
@@ -55,30 +55,49 @@ public class ProcessService {
     @Inject
     private Conversion conversion;
 
+
     @Asynchronous
     public Future<Long> processMessages(List<String> sentences) {
         long start = System.currentTimeMillis();
-        try (Connection connection = getConnection()) {
+
+        try (Connection connection = connectionFactory.createConnection();
+             Session session = connection.createSession(false, 1);
+             MessageProducer producer = session.createProducer(exchangeQueue)
+        ) {
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
             for (String sentence : sentences) {
                 String binary = symbolToBinary(sentence);
                 if (binary != null) {
                     try {
                         MovementBaseType movement = binaryToMovement(binary);
                         if (movement != null) {
-                            saveData(connection, movement);
+                            SetReportMovementType movementReport = getMovementReport(movement);
+                            String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
+                            TextMessage message = session.createTextMessage();
+                            message.setText(text);
+                            producer.send(message);
                         }
                     } catch (NumberFormatException e) {
                         LOG.info("Got badly formed message: {}", binary);
+                    } catch (ExchangeModelMarshallException e) {
+                        LOG.error("Couldn't map movement to setreportmovementtype");
+                    } catch (JMSException e) {
+                        LOG.error("couldn't send movement");
+                        // TODO  this should go to an errortable or errorqueue instead
+                        startUp.getCachedMovement().put(UUID.randomUUID().toString(), getMovementReport(binaryToMovement(binary)));
                     } catch (Exception e) {
                         LOG.info("//NOP: {}", e.getLocalizedMessage());
                     }
                 }
             }
+
         } catch (JMSException e) {
-            e.printStackTrace();
+            LOG.error(e.toString(), e);
+        } finally {
+            LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
+            return new AsyncResult<Long>(new Long(System.currentTimeMillis() - start));
+
         }
-        LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
-        return new AsyncResult<Long>(new Long(System.currentTimeMillis() - start));
     }
 
     private String symbolToBinary(String symbolString) {
@@ -311,25 +330,6 @@ public class ProcessService {
     private double parseSpeedOverGround(String s, int stringStart, int stringEnd) throws NumberFormatException {
         Integer speedOverGround = Integer.parseInt(s.substring(stringStart, stringEnd), 2);
         return speedOverGround.doubleValue() / 10;
-    }
-
-
-    void saveData(Connection connection, MovementBaseType movement) {
-        SetReportMovementType movementReport = getMovementReport(movement);
-        exchangeService.sendMovementReportToExchange(connection, movementReport);
-    }
-
-
-    private Connection getConnection() throws JMSException {
-        return this.getConnectionFactory().createConnection();
-    }
-
-    private ConnectionFactory getConnectionFactory() {
-        if (this.connectionFactory == null) {
-            this.connectionFactory = JMSUtils.lookupConnectionFactory();
-        }
-
-        return this.connectionFactory;
     }
 
     private AssetId getAssetId(String mmsi) {

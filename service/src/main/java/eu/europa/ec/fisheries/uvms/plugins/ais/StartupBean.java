@@ -35,7 +35,6 @@ import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshal
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.mapper.ServiceMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.producer.PluginMessageProducer;
-import eu.europa.ec.fisheries.uvms.plugins.ais.service.ExchangeService;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.FileHandlerBean;
 
 @Singleton
@@ -55,8 +54,6 @@ public class StartupBean extends PluginDataHolder {
     @EJB
     PluginMessageProducer messageProducer;
 
-    @EJB
-    ExchangeService service;
 
     @EJB
     FileHandlerBean fileHandler;

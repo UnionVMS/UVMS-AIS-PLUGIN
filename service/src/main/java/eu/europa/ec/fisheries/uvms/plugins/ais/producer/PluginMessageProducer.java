@@ -63,28 +63,6 @@ public class PluginMessageProducer {
         }
     }
 
-    public void sendModuleMessage(Connection connection, String text, ModuleQueue queue) throws JMSException {
-
-        try (Session session = JMSUtils.connectToQueue(connection);
-             MessageProducer producer =  getProducer(session, exchangeQueue)
-        ) {
-            switch(queue) {
-
-                case EXCHANGE:
-                    TextMessage message = session.createTextMessage();
-                    message.setText(text);
-                    producer.setDeliveryMode(DeliveryMode.PERSISTENT);
-                    producer.send(message);
-                    break;
-                default:
-                    LOG.error("[ Sending Queue is not implemented ]");
-                    break;
-            }
-        } catch (JMSException e) {
-            LOG.error(e.toString(),e);
-            throw e;
-        }
-    }
 
 
 
