@@ -16,6 +16,7 @@ import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdList;
 import eu.europa.ec.fisheries.schema.exchange.movement.asset.v1.AssetIdType;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.*;
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
+import eu.europa.ec.fisheries.uvms.commons.message.impl.JMSUtils;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,9 @@ import javax.ejb.Asynchronous;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -35,6 +39,9 @@ import java.util.concurrent.Future;
 @LocalBean
 @Stateless
 public class ProcessService {
+
+    private ConnectionFactory connectionFactory;
+
 
     final static Logger LOG = LoggerFactory.getLogger(ProcessService.class);
     boolean detailLog = true;
@@ -51,20 +58,24 @@ public class ProcessService {
     @Asynchronous
     public Future<Long> processMessages(List<String> sentences) {
         long start = System.currentTimeMillis();
-        for (String sentence : sentences) {
-            String binary = symbolToBinary(sentence);
-            if (binary != null) {
-                try {
-                    MovementBaseType movement = binaryToMovement(binary);
-                    if (movement != null) {
-                        saveData(movement);
+        try (Connection connection = getConnection()) {
+            for (String sentence : sentences) {
+                String binary = symbolToBinary(sentence);
+                if (binary != null) {
+                    try {
+                        MovementBaseType movement = binaryToMovement(binary);
+                        if (movement != null) {
+                            saveData(connection, movement);
+                        }
+                    } catch (NumberFormatException e) {
+                        LOG.info("Got badly formed message: {}", binary);
+                    } catch (Exception e) {
+                        LOG.info("//NOP: {}", e.getLocalizedMessage());
                     }
-                } catch (NumberFormatException e) {
-                    LOG.info("Got badly formed message: {}", binary);
-                } catch (Exception e) {
-                    LOG.info("//NOP: {}", e.getLocalizedMessage());
                 }
             }
+        } catch (JMSException e) {
+            e.printStackTrace();
         }
         LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
         return new AsyncResult<Long>(new Long(System.currentTimeMillis() - start));
@@ -138,12 +149,11 @@ public class ProcessService {
         // values of 2 and 3 is not allowed
         Integer partNumber = parseToNumeric("Part Number", sentence, 38, 40);
         movement.setPartNumber(partNumber);
-        if(partNumber.equals(0)) {
-            movement.setAssetName(sentence.substring(40,160));
-        }
-        else if(partNumber.equals(1)) {
-            movement.setShipType(sentence.substring(40,48));
-            movement.setVendorId(sentence.substring(48,66));
+        if (partNumber.equals(0)) {
+            movement.setAssetName(sentence.substring(40, 160));
+        } else if (partNumber.equals(1)) {
+            movement.setShipType(sentence.substring(40, 48));
+            movement.setVendorId(sentence.substring(48, 66));
             movement.setUnitModelCode(Integer.parseInt(sentence.substring(66, 70), 2));
             movement.setSerialNumber(sentence.substring(70, 90));
             movement.setCallSign(sentence.substring(90, 132));
@@ -303,9 +313,23 @@ public class ProcessService {
         return speedOverGround.doubleValue() / 10;
     }
 
-    void saveData(MovementBaseType movement) {
+
+    void saveData(Connection connection, MovementBaseType movement) {
         SetReportMovementType movementReport = getMovementReport(movement);
-        exchangeService.sendMovementReportToExchange(movementReport);
+        exchangeService.sendMovementReportToExchange(connection, movementReport);
+    }
+
+
+    private Connection getConnection() throws JMSException {
+        return this.getConnectionFactory().createConnection();
+    }
+
+    private ConnectionFactory getConnectionFactory() {
+        if (this.connectionFactory == null) {
+            this.connectionFactory = JMSUtils.lookupConnectionFactory();
+        }
+
+        return this.connectionFactory;
     }
 
     private AssetId getAssetId(String mmsi) {
@@ -356,7 +380,7 @@ public class ProcessService {
         }
     }
 
-    private Integer parseToNumeric(String fieldName, String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException ,IndexOutOfBoundsException{
+    private Integer parseToNumeric(String fieldName, String sentence, int startPosInclusive, int endPosExclusive) throws NumberFormatException, IndexOutOfBoundsException {
 
         try {
             String str = sentence.substring(startPosInclusive, endPosExclusive);

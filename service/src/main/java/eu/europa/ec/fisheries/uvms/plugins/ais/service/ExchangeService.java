@@ -17,8 +17,11 @@ import java.util.UUID;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 
+import eu.europa.ec.fisheries.uvms.commons.message.impl.JMSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +47,11 @@ public class ExchangeService {
     @EJB
     PluginMessageProducer producer;
 
-    public void sendMovementReportToExchange(SetReportMovementType reportType) {
+
+    public void sendMovementReportToExchange(Connection connection, SetReportMovementType reportType) {
         try {
             String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(reportType, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
-            producer.sendModuleMessage(text, ModuleQueue.EXCHANGE);
+            producer.sendModuleMessage(connection, text, ModuleQueue.EXCHANGE);
         } catch (ExchangeModelMarshallException e) {
             LOG.error("Couldn't map movement to setreportmovementtype");
         } catch (JMSException e) {
@@ -55,4 +59,8 @@ public class ExchangeService {
             startupBean.getCachedMovement().put(UUID.randomUUID().toString(), reportType);
         }
     }
+
+
+
+
 }
