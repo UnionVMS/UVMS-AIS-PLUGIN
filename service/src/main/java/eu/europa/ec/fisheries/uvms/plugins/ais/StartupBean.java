@@ -11,6 +11,8 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -23,6 +25,8 @@ import javax.ejb.Startup;
 import javax.ejb.Timer;
 import javax.jms.JMSException;
 
+import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
+import eu.europa.ec.fisheries.uvms.plugins.ais.service.ProcessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +61,12 @@ public class StartupBean extends PluginDataHolder {
 
     @EJB
     FileHandlerBean fileHandler;
+
+
+    @EJB
+    ProcessService processService;
+
+
 
     private CapabilityListType capabilities;
     private SettingListType settingList;
@@ -113,6 +123,16 @@ public class StartupBean extends PluginDataHolder {
             timer.cancel();
         } else if(numberOfTriesExecuted >= MAX_NUMBER_OF_TRIES) {
             LOG.info(getRegisterClassName() + " failed to register, maximum number of retries reached.");
+        }
+    }
+
+    @Schedule(minute = "*/15", hour = "*", persistent = false)
+    public void resend(Timer timer) {
+        if (registered) {
+            List<MovementBaseType> list = getAndClearCachedMovementList();
+            final Map<String, MovementBaseType>  theMap = new HashMap<>();
+            list.forEach(e -> theMap.put(e.getMmsi(), e));
+            processService.sendToExchange(theMap);
         }
     }
 
