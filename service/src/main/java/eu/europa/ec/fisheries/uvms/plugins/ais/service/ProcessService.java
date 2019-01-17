@@ -357,9 +357,6 @@ public class ProcessService {
 
     private Double parseCoordinate(String data, int stringStart, int stringEnd) throws NumberFormatException {
         Integer i = Integer.parseInt(data.substring(stringStart, stringEnd), 2);
-        if (i.equals(91) || i.equals(181)) {
-            //return null;
-        }
         return (i.doubleValue() / 10000 / 60);
     }
 
