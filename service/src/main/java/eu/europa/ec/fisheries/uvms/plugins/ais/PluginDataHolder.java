@@ -11,14 +11,18 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
+import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.SetReportMovementType;
 
 /**
  **/
 public abstract class PluginDataHolder {
+    private Object lock = new Object();
 
     public final static String PLUGIN_PROPERTIES = "ais.properties";
     public final static String PROPERTIES = "settings.properties";
@@ -30,7 +34,7 @@ public abstract class PluginDataHolder {
 
     private final ConcurrentHashMap<String, String> settings = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> capabilities = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, SetReportMovementType> cachedMovement = new ConcurrentHashMap<>();
+    private final List<MovementBaseType> failedSendList = new ArrayList<>();
 
     public ConcurrentHashMap<String, String> getSettings() {
         return settings;
@@ -40,8 +44,19 @@ public abstract class PluginDataHolder {
         return capabilities;
     }
 
-    public ConcurrentHashMap<String, SetReportMovementType> getCachedMovement() {
-        return cachedMovement;
+    public void addCachedMovement(MovementBaseType movementBaseType) {
+        synchronized(lock) {
+            failedSendList.add(movementBaseType);
+        }
+    }
+
+    public List<MovementBaseType>  getAndClearCachedMovementList() {
+        List<MovementBaseType>  tmp = new ArrayList<> ();
+        synchronized(lock) {
+            tmp.addAll(failedSendList);
+            failedSendList.clear();
+            return tmp;
+        }
     }
 
     public Properties getPluginApplicatonProperties() {
