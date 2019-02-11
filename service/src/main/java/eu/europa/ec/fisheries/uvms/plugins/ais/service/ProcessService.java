@@ -130,16 +130,24 @@ public class ProcessService {
         try {
             StringBuilder sb = new StringBuilder();
 
+            LOG.info("TYP " + symbolString.charAt(0));
+
             switch (symbolString.charAt(0)) {
                 case '0': // message id 0
                 case '1': // message id 1
                 case '2': // message id 2
                 case 'B': // message id 18
-                    // case 'H': // message id 24
+                //case 'H': // message id 24
                     for (int i = 0; i < symbolString.length(); i++) {
                         sb.append(conversion.getBinaryForSymbol(symbolString.charAt(i)));
                     }
                     return sb.toString();
+                case 'H': // message id 24
+//                    LOG.info("---------  H ------------" + symbolString);
+                    break;
+                default:
+//                    LOG.info(symbolString.charAt(0) + "      " + symbolString);
+
             }
         } catch (Exception e) {
             LOG.info("//NOP: {}", e.getLocalizedMessage());
@@ -160,12 +168,15 @@ public class ProcessService {
                 case 0:
                 case 1:
                 case 2:
+              //      LOG.info(parseReportType_1_2_3(messageType, binary,sentence).toString());
                     return parseReportType_1_2_3(messageType, binary, sentence);
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
+             //       LOG.info(parseReportType_18(messageType, binary,sentence).toString());
                     return parseReportType_18(messageType, binary, sentence);
-                //case 24:
+                case 24:
                 // MSG ID 24
+               //     LOG.info(parseReportType_24(messageType, binary).toString());
                 //    return parseReportType_24(messageType, binary);
                 default:
                     return null;
@@ -237,7 +248,7 @@ public class ProcessService {
 
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 61, 89), parseCoordinate(binary, 89, 116), sentence, 123);
         if (point == null) {
-            LOG.error("Error in position longitude or latitude in type 1 or 2 or 3");
+            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence ,binary.substring(61, 89) , binary.substring(89, 116));
             return null;
         }
         movement.setPosition(point);
@@ -294,7 +305,7 @@ public class ProcessService {
         // position  longitude latitude
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 57, 85), parseCoordinate(binary, 85, 112), sentence, 18);
         if (point == null) {
-            LOG.error("Error in position longitude or latitude in type 18");
+            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence ,binary.substring(57, 85) , binary.substring(85, 112));
             return null;
         }
         movement.setPosition(point);
@@ -390,7 +401,7 @@ public class ProcessService {
 
     private MovementPoint getMovementPoint(Double longitude, Double latitude, String sentence, int messageType) {
 
-        if (longitude.equals(91) || longitude.equals(181) || latitude.equals(91)|| latitude.equals(181)) {
+        if (longitude.equals(181d) || latitude.equals(91d)) {
             return null;
         }
 
