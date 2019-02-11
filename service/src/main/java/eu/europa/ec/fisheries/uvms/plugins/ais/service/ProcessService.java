@@ -48,7 +48,6 @@ public class ProcessService {
     @Resource(mappedName = "java:/jms/queue/UVMSExchangeEvent")
     private Queue exchangeQueue;
 
-
     @Resource(mappedName = "java:/jms/queue/UVMSPluginFailedReport")
     private Queue errorQueue;
 
@@ -101,10 +100,9 @@ public class ProcessService {
 
             for (MovementBaseType movement : movements.values()) {
 
-                String text = null;
                 try {
                     SetReportMovementType movementReport = getMovementReport(movement);
-                    text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
+                    String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
                     TextMessage message = session.createTextMessage();
                     message.setText(text);
                     producer.send(message);
@@ -168,16 +166,13 @@ public class ProcessService {
                 case 0:
                 case 1:
                 case 2:
-              //      LOG.info(parseReportType_1_2_3(messageType, binary,sentence).toString());
                     return parseReportType_1_2_3(messageType, binary, sentence);
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
-             //       LOG.info(parseReportType_18(messageType, binary,sentence).toString());
                     return parseReportType_18(messageType, binary, sentence);
                 case 24:
                 // MSG ID 24
-               //     LOG.info(parseReportType_24(messageType, binary).toString());
-                //    return parseReportType_24(messageType, binary);
+                    return parseReportType_24(messageType, binary);
                 default:
                     return null;
             }
