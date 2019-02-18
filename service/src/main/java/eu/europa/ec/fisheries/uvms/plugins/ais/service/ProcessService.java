@@ -131,20 +131,18 @@ public class ProcessService {
             LOG.info("TYP " + symbolString.charAt(0));
 
             switch (symbolString.charAt(0)) {
-                case '0': // message id 0
                 case '1': // message id 1
                 case '2': // message id 2
+                case '3': // message id 3
+                case '5': // message id 5
                 case 'B': // message id 18
-                //case 'H': // message id 24
+                case 'H': // message id 24
                     for (int i = 0; i < symbolString.length(); i++) {
                         sb.append(conversion.getBinaryForSymbol(symbolString.charAt(i)));
                     }
                     return sb.toString();
-                case 'H': // message id 24
-//                    LOG.info("---------  H ------------" + symbolString);
-                    break;
                 default:
-//                    LOG.info(symbolString.charAt(0) + "      " + symbolString);
+                    LOG.info(symbolString.charAt(0) + "      " + symbolString);
 
             }
         } catch (Exception e) {
@@ -163,10 +161,13 @@ public class ProcessService {
             // Check that the type of msg is a valid postion msg print for info. Should already be handled.
             LOG.debug("Sentence: {}", binary);
             switch (messageType) {
-                case 0:
                 case 1:
                 case 2:
+                case 3:
                     return parseReportType_1_2_3(messageType, binary, sentence);
+                case 5:
+                    // MSG ID 5
+                    return parseReportType_5(messageType, binary, sentence);
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
                     return parseReportType_18(messageType, binary, sentence);
@@ -275,6 +276,79 @@ public class ProcessService {
         return movement;
     }
 
+    // first draft for type 5
+    private MovementBaseType parseReportType_5(Integer messageType, String binary, String sentence) {
+
+        MovementBaseType movement = new MovementBaseType();
+        movement.setAisMessageType(messageType);
+        String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
+        movement.setMmsi(mmsi);
+        movement.setAssetId(getAssetId(mmsi));
+
+        movement.setAisVersion(parseToNumeric("AIS_version", binary.substring(38,40) ));
+        String imoNumber = binary.substring(40,70);
+        movement.setImoNumber(imoNumber);
+
+        String callSign = binary.substring(70,112);
+        movement.setCallSign(callSign);
+        String vesselName = binary.substring(112,232);
+        movement.setAssetName(vesselName);
+        String shipType = binary.substring(232,240);
+        movement.setShipType(shipType);
+
+        movement.setDimensionToBow(Integer.parseInt(binary.substring(240,249), 2));
+        movement.setDimensionToStern(Integer.parseInt(binary.substring(249,258), 2));
+        movement.setDimensionToPort(Integer.parseInt(binary.substring(258,264), 2));
+        movement.setDimensionToStarBoard(Integer.parseInt(binary.substring(264,270), 2));
+
+        String positionFixtype =  binary.substring(270,274);
+        movement.setPositionFixType(positionFixtype);
+
+        String etaMonthUTC =  binary.substring(274,278);
+        String etaDayUTC =  binary.substring(278,283);
+        String etaHourUTC =  binary.substring(283,288);
+        String etaMinuteUTC =  binary.substring(288,294);
+
+
+        Date ETA = asDate(etaMonthUTC,etaDayUTC,etaHourUTC,etaMinuteUTC);
+        movement.setETA(ETA);
+
+        String draught =  binary.substring(294,302);
+        movement.setDraught(toInt(draught,0));
+        String destination =  binary.substring(302,422);
+        movement.setDestination(destination);
+        Boolean dataTerminaReady = parseToBoolean(binary, 422, 423);
+        movement.setDTE(dataTerminaReady);
+
+        movement.setSource(MovementSourceType.AIS);
+
+        return movement;
+    }
+
+    Date asDate(String monthStr, String dayStr,String hourStr, String minuteStr){
+
+        int month = toInt(monthStr, 0);
+        int day = toInt(dayStr, 0);
+        int hour = toInt(hourStr, 24);
+        int minute = toInt(minuteStr, 60);
+
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        cal.set(Calendar.MONTH, month);
+        cal.set(Calendar.DAY_OF_MONTH, day );
+        cal.set(Calendar.HOUR, hour );
+        cal.set(Calendar.MINUTE, minute );
+        return cal.getTime();
+    }
+
+
+    int toInt(String value, int defaultValue){
+        if(value == null) return defaultValue;
+        try{
+            return Integer.parseInt(value);
+        }catch(NumberFormatException e){
+            return defaultValue;
+        }
+    }
 
     private MovementBaseType parseReportType_18(Integer messageType, String binary, String sentence) throws NumberFormatException {
 
@@ -453,10 +527,23 @@ public class ProcessService {
             // emit
 
             try {
-                TextMessage message = session.createTextMessage();
-                message.setStringProperty("source", "AIS");
-                message.setText(movement);
-                producer.send(message);
+
+                BytesMessage message_bytes = session.createBytesMessage();
+                message_bytes.setStringProperty("source", "AIS");
+                message_bytes.setStringProperty("type", "byte");
+                message_bytes.writeBytes(movement.getBytes());
+                producer.send(message_bytes);
+
+                /*
+
+                TextMessage message_text = session.createTextMessage();
+                message_text.setStringProperty("source", "AIS");
+                message_bytes.setStringProperty("type", "text");
+                message_text.setText(movement);
+                producer.send(message_text);
+
+                */
+
             } catch (Exception e) {
                 LOG.info("//NOP: {}", e.getLocalizedMessage());
             }
