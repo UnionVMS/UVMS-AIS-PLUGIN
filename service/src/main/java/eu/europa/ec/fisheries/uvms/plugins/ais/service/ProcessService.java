@@ -48,7 +48,6 @@ public class ProcessService {
     @Resource(mappedName = "java:/jms/queue/UVMSExchangeEvent")
     private Queue exchangeQueue;
 
-
     @Resource(mappedName = "java:/jms/queue/UVMSPluginFailedReport")
     private Queue errorQueue;
 
@@ -101,10 +100,9 @@ public class ProcessService {
 
             for (MovementBaseType movement : movements.values()) {
 
-                String text = null;
                 try {
                     SetReportMovementType movementReport = getMovementReport(movement);
-                    text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
+                    String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
                     TextMessage message = session.createTextMessage();
                     message.setText(text);
                     producer.send(message);
@@ -130,16 +128,22 @@ public class ProcessService {
         try {
             StringBuilder sb = new StringBuilder();
 
+            LOG.info("TYP " + symbolString.charAt(0));
+
             switch (symbolString.charAt(0)) {
-                case '0': // message id 0
                 case '1': // message id 1
                 case '2': // message id 2
+                case '3': // message id 3
+                case '5': // message id 5
                 case 'B': // message id 18
-                    // case 'H': // message id 24
+                case 'H': // message id 24
                     for (int i = 0; i < symbolString.length(); i++) {
                         sb.append(conversion.getBinaryForSymbol(symbolString.charAt(i)));
                     }
                     return sb.toString();
+                default:
+                    LOG.info(symbolString.charAt(0) + "      " + symbolString);
+
             }
         } catch (Exception e) {
             LOG.info("//NOP: {}", e.getLocalizedMessage());
@@ -157,16 +161,19 @@ public class ProcessService {
             // Check that the type of msg is a valid postion msg print for info. Should already be handled.
             LOG.debug("Sentence: {}", binary);
             switch (messageType) {
-                case 0:
                 case 1:
                 case 2:
+                case 3:
                     return parseReportType_1_2_3(messageType, binary, sentence);
+                case 5:
+                    // MSG ID 5
+                    return parseReportType_5(messageType, binary, sentence);
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
                     return parseReportType_18(messageType, binary, sentence);
-                //case 24:
+                case 24:
                 // MSG ID 24
-                //    return parseReportType_24(messageType, binary);
+                    return parseReportType_24(messageType, binary);
                 default:
                     return null;
             }
@@ -237,7 +244,7 @@ public class ProcessService {
 
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 61, 89), parseCoordinate(binary, 89, 116), sentence, 123);
         if (point == null) {
-            LOG.error("Error in position longitude or latitude in type 1 or 2 or 3");
+            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence ,binary.substring(61, 89) , binary.substring(89, 116));
             return null;
         }
         movement.setPosition(point);
@@ -269,6 +276,79 @@ public class ProcessService {
         return movement;
     }
 
+    // first draft for type 5
+    private MovementBaseType parseReportType_5(Integer messageType, String binary, String sentence) {
+
+        MovementBaseType movement = new MovementBaseType();
+        movement.setAisMessageType(messageType);
+        String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
+        movement.setMmsi(mmsi);
+        movement.setAssetId(getAssetId(mmsi));
+
+        movement.setAisVersion(parseToNumeric("AIS_version", binary.substring(38,40) ));
+        String imoNumber = binary.substring(40,70);
+        movement.setImoNumber(imoNumber);
+
+        String callSign = binary.substring(70,112);
+        movement.setCallSign(callSign);
+        String vesselName = binary.substring(112,232);
+        movement.setAssetName(vesselName);
+        String shipType = binary.substring(232,240);
+        movement.setShipType(shipType);
+
+        movement.setDimensionToBow(Integer.parseInt(binary.substring(240,249), 2));
+        movement.setDimensionToStern(Integer.parseInt(binary.substring(249,258), 2));
+        movement.setDimensionToPort(Integer.parseInt(binary.substring(258,264), 2));
+        movement.setDimensionToStarBoard(Integer.parseInt(binary.substring(264,270), 2));
+
+        String positionFixtype =  binary.substring(270,274);
+        movement.setPositionFixType(positionFixtype);
+
+        String etaMonthUTC =  binary.substring(274,278);
+        String etaDayUTC =  binary.substring(278,283);
+        String etaHourUTC =  binary.substring(283,288);
+        String etaMinuteUTC =  binary.substring(288,294);
+
+
+        Date ETA = asDate(etaMonthUTC,etaDayUTC,etaHourUTC,etaMinuteUTC);
+        movement.setETA(ETA);
+
+        String draught =  binary.substring(294,302);
+        movement.setDraught(toInt(draught,0));
+        String destination =  binary.substring(302,422);
+        movement.setDestination(destination);
+        Boolean dataTerminaReady = parseToBoolean(binary, 422, 423);
+        movement.setDTE(dataTerminaReady);
+
+        movement.setSource(MovementSourceType.AIS);
+
+        return movement;
+    }
+
+    Date asDate(String monthStr, String dayStr,String hourStr, String minuteStr){
+
+        int month = toInt(monthStr, 0);
+        int day = toInt(dayStr, 0);
+        int hour = toInt(hourStr, 24);
+        int minute = toInt(minuteStr, 60);
+
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        cal.set(Calendar.MONTH, month);
+        cal.set(Calendar.DAY_OF_MONTH, day );
+        cal.set(Calendar.HOUR, hour );
+        cal.set(Calendar.MINUTE, minute );
+        return cal.getTime();
+    }
+
+
+    int toInt(String value, int defaultValue){
+        if(value == null) return defaultValue;
+        try{
+            return Integer.parseInt(value);
+        }catch(NumberFormatException e){
+            return defaultValue;
+        }
+    }
 
     private MovementBaseType parseReportType_18(Integer messageType, String binary, String sentence) throws NumberFormatException {
 
@@ -294,7 +374,7 @@ public class ProcessService {
         // position  longitude latitude
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 57, 85), parseCoordinate(binary, 85, 112), sentence, 18);
         if (point == null) {
-            LOG.error("Error in position longitude or latitude in type 18");
+            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence ,binary.substring(57, 85) , binary.substring(85, 112));
             return null;
         }
         movement.setPosition(point);
@@ -390,7 +470,7 @@ public class ProcessService {
 
     private MovementPoint getMovementPoint(Double longitude, Double latitude, String sentence, int messageType) {
 
-        if (longitude.equals(91) || longitude.equals(181) || latitude.equals(91)|| latitude.equals(181)) {
+        if (longitude.equals(181d) || latitude.equals(91d)) {
             return null;
         }
 
@@ -447,10 +527,23 @@ public class ProcessService {
             // emit
 
             try {
-                TextMessage message = session.createTextMessage();
-                message.setStringProperty("source", "AIS");
-                message.setText(movement);
-                producer.send(message);
+
+                BytesMessage message_bytes = session.createBytesMessage();
+                message_bytes.setStringProperty("source", "AIS");
+                message_bytes.setStringProperty("type", "byte");
+                message_bytes.writeBytes(movement.getBytes());
+                producer.send(message_bytes);
+
+                /*
+
+                TextMessage message_text = session.createTextMessage();
+                message_text.setStringProperty("source", "AIS");
+                message_bytes.setStringProperty("type", "text");
+                message_text.setText(movement);
+                producer.send(message_text);
+
+                */
+
             } catch (Exception e) {
                 LOG.info("//NOP: {}", e.getLocalizedMessage());
             }
