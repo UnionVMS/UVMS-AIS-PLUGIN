@@ -11,25 +11,7 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.ejb.DependsOn;
-import javax.ejb.EJB;
-import javax.ejb.Schedule;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
-import javax.ejb.Timer;
-import javax.jms.JMSException;
-
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
-import eu.europa.ec.fisheries.uvms.plugins.ais.service.ProcessService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.CapabilityListType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.ServiceType;
@@ -40,6 +22,17 @@ import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMa
 import eu.europa.ec.fisheries.uvms.plugins.ais.mapper.ServiceMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.producer.PluginMessageProducer;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.FileHandlerBean;
+import eu.europa.ec.fisheries.uvms.plugins.ais.service.ProcessService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.ejb.*;
+import javax.jms.JMSException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Singleton
 @Startup
@@ -49,25 +42,17 @@ public class StartupBean extends PluginDataHolder {
     final static Logger LOG = LoggerFactory.getLogger(StartupBean.class);
 
     private final static int MAX_NUMBER_OF_TRIES = 10;
+    @EJB
+    PluginMessageProducer messageProducer;
+    @EJB
+    FileHandlerBean fileHandler;
+    @EJB
+    ProcessService processService;
     private boolean registered = false;
     private boolean enabled = false;
     private boolean waitingForResponse = false;
     private int numberOfTriesExecuted = 0;
     private String REGISTER_CLASS_NAME = "";
-
-    @EJB
-    PluginMessageProducer messageProducer;
-
-
-    @EJB
-    FileHandlerBean fileHandler;
-
-
-    @EJB
-    ProcessService processService;
-
-
-
     private CapabilityListType capabilities;
     private SettingListType settingList;
     private ServiceType serviceType;
@@ -113,26 +98,35 @@ public class StartupBean extends PluginDataHolder {
 
     @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
     public void timeout(Timer timer) {
-        if (!waitingForResponse && !registered && numberOfTriesExecuted < MAX_NUMBER_OF_TRIES) {
-            LOG.info(getRegisterClassName() + " is not registered, trying to register");
-            register();
-            numberOfTriesExecuted++;
-        }
-        if (registered) {
-            LOG.info(getRegisterClassName() + " is registered. Cancelling timer.");
-            timer.cancel();
-        } else if(numberOfTriesExecuted >= MAX_NUMBER_OF_TRIES) {
-            LOG.info(getRegisterClassName() + " failed to register, maximum number of retries reached.");
+
+        try {
+            if (!waitingForResponse && !registered && numberOfTriesExecuted < MAX_NUMBER_OF_TRIES) {
+                LOG.info(getRegisterClassName() + " is not registered, trying to register");
+                register();
+                numberOfTriesExecuted++;
+            }
+            if (registered) {
+                LOG.info(getRegisterClassName() + " is registered. Cancelling timer.");
+                timer.cancel();
+            } else if (numberOfTriesExecuted >= MAX_NUMBER_OF_TRIES) {
+                LOG.info(getRegisterClassName() + " failed to register, maximum number of retries reached.");
+            }
+        } catch (Exception e) {
+            LOG.error(e.toString(), e);
         }
     }
 
     @Schedule(minute = "*/15", hour = "*", persistent = false)
     public void resend(Timer timer) {
-        if (registered) {
-            List<MovementBaseType> list = getAndClearCachedMovementList();
-            final Map<String, MovementBaseType>  theMap = new HashMap<>();
-            list.forEach(e -> theMap.put(e.getMmsi(), e));
-            processService.sendToExchange(theMap);
+        try {
+            if (registered) {
+                List<MovementBaseType> list = getAndClearCachedMovementList();
+                final Map<String, MovementBaseType> theMap = new HashMap<>();
+                list.forEach(e -> theMap.put(e.getMmsi(), e));
+                processService.sendToExchange(theMap);
+            }
+        } catch (Exception e) {
+            LOG.error(e.toString(), e);
         }
     }
 
