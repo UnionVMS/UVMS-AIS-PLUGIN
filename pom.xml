@@ -19,13 +19,14 @@
 
         <uvms.common.version>3.0.29</uvms.common.version>
         <ais.ra.version>3.0.4</ais.ra.version>
-        <exchange.model.version>4.0.30</exchange.model.version>
+        <exchange.model.version>4.0.32</exchange.model.version>
     </properties>
     
     <dependencies>        
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
+            <version>8.0</version>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.fisheries.uvms.exchange</groupId>
