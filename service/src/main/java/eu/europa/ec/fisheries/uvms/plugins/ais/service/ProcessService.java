@@ -303,7 +303,7 @@ public class ProcessService {
         String vesselName = binary.substring(112, 232);
         String ircs =  binary.substring(70,112);;
         String shipType = binary.substring(232,240);
-        
+
         AssetDTO assetDTO = new AssetDTO();
         assetDTO.setMmsi(mmsi);
         assetDTO.setName(vesselName);
