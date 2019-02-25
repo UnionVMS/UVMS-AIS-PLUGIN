@@ -248,13 +248,13 @@ public class ProcessService {
                     return new BinaryToMovementReturn(messageType, parseReportType_1_2_3(messageType, binary, sentence));
                 case 5:
                     // MSG ID 5
-                    return new BinaryToMovementReturn(messageType, parseReportType_5(messageType, binary, sentence));
+                    return new BinaryToMovementReturn(messageType, parseReportType_5_AndSend(messageType, binary, sentence));
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
                     return new BinaryToMovementReturn(messageType, parseReportType_18(messageType, binary, sentence));
                 case 24:
                     // MSG ID 24
-                    return new BinaryToMovementReturn(messageType, parseReportType_24(messageType, binary));
+                    return new BinaryToMovementReturn(messageType, parseReportType_24_AndSend(messageType, binary));
                 default:
                     return null;
             }
@@ -292,7 +292,7 @@ public class ProcessService {
     }
 
     // first draft for type 5
-    private Boolean parseReportType_5(Integer messageType, String binary, String sentence) {
+    private Boolean parseReportType_5_AndSend(Integer messageType, String binary, String sentence) {
 
 
         ReceiveAssetInformationRequest req = new ReceiveAssetInformationRequest();
@@ -301,10 +301,14 @@ public class ProcessService {
         //movement.setAisMessageType(messageType);
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String vesselName = binary.substring(112, 232);
-
+        String ircs =  binary.substring(70,112);;
+        String shipType = binary.substring(232,240);
+        
         AssetDTO assetDTO = new AssetDTO();
         assetDTO.setMmsi(mmsi);
         assetDTO.setName(vesselName);
+        assetDTO.setIrcs(ircs);
+        assetDTO.setVesselType(shipType);
         sendAssetUpdateToExchange(assetDTO);
         return Boolean.TRUE;
 
@@ -349,7 +353,7 @@ public class ProcessService {
         return movement;
     }
 
-    private Boolean parseReportType_24(Integer messageType, String binary) throws NumberFormatException {
+    private Boolean parseReportType_24_AndSend(Integer messageType, String binary) throws NumberFormatException {
 
         if (binary == null || binary.trim().length() < 1) {
             return null;
@@ -360,6 +364,8 @@ public class ProcessService {
         //movement.setAisMessageType(messageType);
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String vesselName = "";
+        String shipType = "";
+        String ircs = "";
 
 
         // if partNumber == 0   the rest of the message is interpreted as a Part A
@@ -370,10 +376,18 @@ public class ProcessService {
         if (partNumber.equals(0)) {
             vesselName = binary.substring(40, 160);
         }
+        else if (partNumber.equals(1)) {
+            shipType = binary.substring(40, 48);
+            ircs = binary.substring(90, 132);
+        }
+
+
 
         AssetDTO assetDTO = new AssetDTO();
         assetDTO.setMmsi(mmsi);
         assetDTO.setName(vesselName);
+        assetDTO.setIrcs(ircs);
+        assetDTO.setVesselType(shipType);
         sendAssetUpdateToExchange(assetDTO);
         return Boolean.TRUE;
 
