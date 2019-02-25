@@ -21,10 +21,10 @@ import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementPoint;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementSourceType;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.SetReportMovementType;
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
+import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshallException;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
-import eu.europa.ec.fisheries.wsdl.asset.types.Asset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +36,8 @@ import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.jms.Queue;
 import javax.jms.*;
-import javax.json.Json;
-import javax.json.JsonBuilderFactory;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
-import javax.xml.bind.JAXB;
 import java.util.*;
 import java.util.concurrent.Future;
 
@@ -142,7 +139,7 @@ public class ProcessService {
         return sendToExchange(downSamplingControl);
     }
 
-    public Future<Long> sendAssetUpdateToExchange(Asset asset) {
+    public Future<Long> sendAssetUpdateToExchange(AssetDTO asset) {
         long start = System.currentTimeMillis();
 
         Jsonb jsonb = JsonbBuilder.create();
@@ -305,10 +302,10 @@ public class ProcessService {
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String vesselName = binary.substring(112, 232);
 
-        Asset asset = new Asset();
-        asset.setMmsiNo(mmsi);
-        asset.setName(vesselName);
-        sendAssetUpdateToExchange(asset);
+        AssetDTO assetDTO = new AssetDTO();
+        assetDTO.setMmsi(mmsi);
+        assetDTO.setName(vesselName);
+        sendAssetUpdateToExchange(assetDTO);
         return Boolean.TRUE;
 
     }
@@ -374,10 +371,10 @@ public class ProcessService {
             vesselName = binary.substring(40, 160);
         }
 
-        Asset asset = new Asset();
-        asset.setMmsiNo(mmsi);
-        asset.setName(vesselName);
-        sendAssetUpdateToExchange(asset);
+        AssetDTO assetDTO = new AssetDTO();
+        assetDTO.setMmsi(mmsi);
+        assetDTO.setName(vesselName);
+        sendAssetUpdateToExchange(assetDTO);
         return Boolean.TRUE;
 
     }
