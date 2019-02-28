@@ -302,7 +302,6 @@ public class ProcessService {
         ReceiveAssetInformationRequest req = new ReceiveAssetInformationRequest();
         req.setMethod(ExchangeModuleMethod.RECEIVE_ASSET_INFORMATION);
 
-        //movement.setAisMessageType(messageType);
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
         String ircs = conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
@@ -394,9 +393,6 @@ public class ProcessService {
 
 
         }
-
-        LOG.info("type24 mmsi: {} vesselName: {} ircs: {} shipType: {} country {}", mmsi, vesselName, ircs, shipType, ansi3);
-
 
         AssetDTO assetDTO = new AssetDTO();
         assetDTO.setMmsi(mmsi);
