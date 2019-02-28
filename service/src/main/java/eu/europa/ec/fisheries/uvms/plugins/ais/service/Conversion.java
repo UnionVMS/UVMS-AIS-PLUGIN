@@ -11,31 +11,157 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Singleton
 public class Conversion {
 
     public static Map<String, String> symbolMap;
-    private static Map<String, String> binaryToSymbolMap;
+    public static Map<String, Character> binToAsciiMap;
 
 
-    @PostConstruct
-    public void init() {
+    public Conversion(){
         buildSymbolMap();
+        buildBinToAsciiMap();
     }
+
 
     public String getBinaryForSymbol(char c) throws Exception {
         return symbolMap.get("" + c);
     }
 
-    public String getSymbolForBinary(String binary) throws IllegalArgumentException {
-        if((binary == null) || (binary.length() != 6)) throw new IllegalArgumentException("binary must be 6 in length");
-        return binaryToSymbolMap.get(binary);
+
+    // decoder for binary6-strings
+    public String getAsciiStringFromBinaryString(String binary) {
+
+        StringBuilder builder = new StringBuilder();
+        if (binary == null || binary.length() < 1) {
+            return "";
+        }
+        String parts[] = splitToNChar(binary, 6);
+        int len = parts.length;
+        if (len < 1) {
+            return "";
+        }
+        for (int pos = 0; pos < len; pos++) {
+
+            String bin = parts[pos];
+            Character chr = binToAsciiMap.get(bin);
+            if(chr != null){
+                builder.append(chr);
+            }
+        }
+        return removeTrailingSnabelA(builder.toString());
+    }
+
+    String removeTrailingSnabelA(String s) {
+        int index;
+        for (index = s.length() - 1; index >= 0; index--) {
+            if (s.charAt(index) != '@') {
+                break;
+            }
+        }
+        return s.substring(0, index + 1);
+    }
+
+
+    /**
+     * Split text into n number of characters.
+     *
+     * @param text the text to be split.
+     * @param size the split size.
+     * @return an array of the split text.
+     */
+    private String[] splitToNChar(String text, int size) {
+        List<String> parts = new ArrayList<>();
+
+        int length = text.length();
+        for (int i = 0; i < length; i += size) {
+            parts.add(text.substring(i, Math.min(length, i + size)));
+        }
+        return parts.toArray(new String[0]);
+    }
+
+    private void buildBinToAsciiMap() {
+        // Table 3 sixbit ascii
+        // http://catb.org/gpsd/AIVDM.html
+
+        binToAsciiMap = new TreeMap<>();
+
+        binToAsciiMap.put("000000",'@');
+        binToAsciiMap.put("000001",'A');
+        binToAsciiMap.put("000010",'B');
+        binToAsciiMap.put("000011",'C');
+        binToAsciiMap.put("000100",'D');
+        binToAsciiMap.put("000101",'E');
+        binToAsciiMap.put("000110",'F');
+        binToAsciiMap.put("000111",'G');
+        binToAsciiMap.put("001000",'H');
+        binToAsciiMap.put("001001",'I');
+        binToAsciiMap.put("001010",'J');
+        binToAsciiMap.put("001011",'K');
+        binToAsciiMap.put("001100",'L');
+        binToAsciiMap.put("001101",'M');
+        binToAsciiMap.put("001110",'N');
+        binToAsciiMap.put("001111",'O');
+
+
+        binToAsciiMap.put("010000",'P');
+        binToAsciiMap.put("010001",'Q');
+        binToAsciiMap.put("010010",'R');
+        binToAsciiMap.put("010011",'S');
+        binToAsciiMap.put("010100",'T');
+        binToAsciiMap.put("010101",'U');
+        binToAsciiMap.put("010110",'V');
+        binToAsciiMap.put("010111",'W');
+        binToAsciiMap.put("011000",'X');
+        binToAsciiMap.put("011001",'Y');
+        binToAsciiMap.put("011010",'Z');
+        binToAsciiMap.put("011011",'[');
+        binToAsciiMap.put("011100",'\\');
+        binToAsciiMap.put("011101",']');
+        binToAsciiMap.put("011110",'^');
+        binToAsciiMap.put("011111",'_');
+
+        binToAsciiMap.put("100000",' ');
+        binToAsciiMap.put("100001",'!');
+        binToAsciiMap.put("100010",'\"');
+        binToAsciiMap.put("100011",'#');
+        binToAsciiMap.put("100100",'$');
+        binToAsciiMap.put("100101",'%');
+        binToAsciiMap.put("100110",'&');
+        binToAsciiMap.put("100111",'\'');
+        binToAsciiMap.put("101000",'(');
+        binToAsciiMap.put("101001",')');
+        binToAsciiMap.put("101010",'*');
+        binToAsciiMap.put("101011",'+');
+        binToAsciiMap.put("101100",',');
+        binToAsciiMap.put("101101",'-');
+        binToAsciiMap.put("101110",'.');
+        binToAsciiMap.put("101111",'/');
+
+        binToAsciiMap.put("110000",'0');
+        binToAsciiMap.put("110001",'1');
+        binToAsciiMap.put("110010",'2');
+        binToAsciiMap.put("110011",'3');
+        binToAsciiMap.put("110100",'4');
+        binToAsciiMap.put("110101",'5');
+        binToAsciiMap.put("110110",'6');
+        binToAsciiMap.put("110111",'7');
+        binToAsciiMap.put("111000",'8');
+        binToAsciiMap.put("111001",'9');
+        binToAsciiMap.put("111010",':');
+        binToAsciiMap.put("111011",';');
+        binToAsciiMap.put("111100",'<');
+        binToAsciiMap.put("111101",'=');
+        binToAsciiMap.put("111110",'>');
+        binToAsciiMap.put("111111",'?');
+
     }
 
 
@@ -105,19 +231,6 @@ public class Conversion {
         symbolMap.put("u", "111101");
         symbolMap.put("v", "111110");
         symbolMap.put("w", "111111");
-
-
-
-
-        binaryToSymbolMap = new TreeMap<>();
-        for (Map.Entry<String, String> entry : symbolMap.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            binaryToSymbolMap.put(value, key);
-        }
-
-
-
     }
 
 }

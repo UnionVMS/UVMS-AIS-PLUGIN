@@ -11,9 +11,11 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais;
 
+import eu.europa.ec.fisheries.uvms.plugins.ais.service.Conversion;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.junit.Assert;
 
 /**
  * Unit test for simple App.
@@ -40,10 +42,58 @@ public class AppTest
     }
 
     /**
-     * Rigourous Test :-)
      */
-    public void testApp()
-    {
-        assertTrue( true );
+    public void testType5_1() throws Exception {
+
+        Conversion conversion = new Conversion();
+        String aisMsg = "5CpuqR029m2U<pLP00084i@T<40000000000000N1HN814lf0<1i6CR@@PC52@ii6CR@@00";
+        int lenAis = aisMsg.length();
+        String binary = "";
+        for(int i = 0 ; i < lenAis ; i++){
+            String binChar = conversion.getBinaryForSymbol(aisMsg.charAt(i));
+            binary += binChar;
+        }
+        String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
+        Assert.assertEquals("BALTICA",vesselName);
     }
+
+    public void testType5_2() throws Exception {
+
+        Conversion conversion = new Conversion();
+        String aisMsg = "53oTbV029MP4haDt000`tPp0000000000000000l1@G556eA0<Tk0AiCP00000000000000";
+        int lenAis = aisMsg.length();
+        String binary = "";
+        for(int i = 0 ; i < lenAis ; i++){
+            String binChar = conversion.getBinaryForSymbol(aisMsg.charAt(i));
+            binary += binChar;
+        }
+        String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
+        Assert.assertEquals("JOHN",vesselName);
+    }
+
+    public void testType5_3() throws Exception {
+        Conversion conversion = new Conversion();
+
+        String vesselName = conversion.getAsciiStringFromBinaryString("");
+        Assert.assertEquals("",vesselName);
+    }
+
+
+    public void testType24() throws Exception {
+
+        Conversion conversion = new Conversion();
+
+        String aisMsg = "H3uHE`058du=DpA>0L5=@P4lp00";
+        int lenAis = aisMsg.length();
+        String binary = "";
+        for(int i = 0 ; i < lenAis ; i++){
+            String binChar = conversion.getBinaryForSymbol(aisMsg.charAt(i));
+            binary += binChar;
+        }
+        String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(40, 160));
+        Assert.assertEquals("ARKOSUNDS GASTHAMN",vesselName);
+    }
+
+
+
 }

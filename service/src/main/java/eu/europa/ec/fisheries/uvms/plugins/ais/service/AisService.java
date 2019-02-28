@@ -91,8 +91,8 @@ public class AisService {
         }
     }
 
-    // @Schedule(minute="*/1", hour="*", persistent=false)
-    @Schedule(second="*/30", minute="*", hour="*", persistent=false)
+    //@Schedule(second="*/30", minute="*", hour="*", persistent=false)
+    @Schedule(minute="*/1", hour="*", persistent=false)
     public void connectAndRetrive(){
         if (!startUp.isEnabled()) {
             return;
