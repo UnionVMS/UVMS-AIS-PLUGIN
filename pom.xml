@@ -10,7 +10,7 @@
 
     <groupId>eu.europa.ec.fisheries.uvms.plugins</groupId>
     <artifactId>ais</artifactId>
-    <version>3.0.12-SNAPSHOT</version>
+    <version>3.0.12</version>
     <packaging>pom</packaging>
     <description>UVMS AIS plugin.</description>
     
@@ -58,7 +58,7 @@
 
     <scm>
         <connection>scm:git:https://github.com/UnionVMS/UVMS-AIS-PLUGIN.git</connection>
-      <tag>HEAD</tag>
+      <tag>ais-3.0.12</tag>
   </scm>
     
   <modules>
