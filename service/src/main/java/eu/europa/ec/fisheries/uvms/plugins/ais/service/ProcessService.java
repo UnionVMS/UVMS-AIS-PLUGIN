@@ -48,29 +48,32 @@ import java.util.concurrent.Future;
 @Stateless
 public class ProcessService {
 
+    private Jsonb jsonb = JsonbBuilder.create();
+
+
     class BinaryToMovementReturn {
         private int messageType;
         private MovementBaseType movementBaseType;
-        private Boolean sendToExchange;
+        private AssetDTO assetDto;
 
         public BinaryToMovementReturn(int messageType, MovementBaseType movementBaseType) {
             this.messageType = messageType;
             this.movementBaseType = movementBaseType;
-            this.sendToExchange = null;
+            this.assetDto = null;
         }
 
-        public BinaryToMovementReturn(int messageType, Boolean sendToExchange) {
+        public BinaryToMovementReturn(int messageType, AssetDTO assetDto) {
             this.messageType = messageType;
             this.movementBaseType = null;
-            this.sendToExchange = sendToExchange;
+            this.assetDto = assetDto;
         }
 
         public MovementBaseType getMovementBaseType() {
             return movementBaseType;
         }
 
-        public Boolean getSendToExchange() {
-            return sendToExchange;
+        public AssetDTO getAssetDTO() {
+            return assetDto;
         }
 
         public int getMessageType() {
@@ -101,6 +104,7 @@ public class ProcessService {
     public Future<Long> processMessages(List<String> sentences) {
 
         Map<String, MovementBaseType> downSamplingControl = new HashMap<>();
+        List<AssetDTO> assetInfo = new ArrayList<>();
 
         // collect
         for (String sentence : sentences) {
@@ -126,27 +130,23 @@ public class ProcessService {
                         }
                         case 5:
                         case 24: {
-                            Boolean ok = retVal.getSendToExchange();
-                            if (!ok) {
-                                sendToErrorQueueParsingError(sentence);
-                            }
+                            AssetDTO assetDto  = retVal.getAssetDTO();
+                            assetInfo.add(assetDto);
                             break;
                         }
                     }
                 }
             }
         }
+        sendAssetUpdateToExchange(assetInfo);
         return sendToExchange(downSamplingControl);
     }
 
-    public boolean sendAssetUpdateToExchange(AssetDTO asset) {
+    public boolean sendAssetUpdateToExchange(List<AssetDTO> assets) {
 
         boolean ok = true;
-        Jsonb jsonb = JsonbBuilder.create();
-        String json = jsonb.toJson(asset);
-
+        String json = jsonb.toJson(assets);
         LOG.trace(json);
-
         try (Connection connection = connectionFactory.createConnection();
              Session session = connection.createSession(false, 1);
              MessageProducer producer = session.createProducer(exchangeQueue)
@@ -212,9 +212,6 @@ public class ProcessService {
     private String symbolToBinary(String symbolString) {
         try {
             StringBuilder sb = new StringBuilder();
-
-            LOG.info("Typ: {}  SymbolString: {}", symbolString.charAt(0), symbolString);
-
             switch (symbolString.charAt(0)) {
                 case '1': // message id 1
                 case '2': // message id 2
@@ -244,7 +241,6 @@ public class ProcessService {
         try {
             int messageType = Integer.parseInt(binary.substring(0, 6), 2);
             // Check that the type of msg is a valid postion msg print for info. Should already be handled.
-            LOG.trace("Sentence: {}", binary);
             switch (messageType) {
                 case 1:
                 case 2:
@@ -252,13 +248,13 @@ public class ProcessService {
                     return new BinaryToMovementReturn(messageType, parseReportType_1_2_3(messageType, binary, sentence));
                 case 5:
                     // MSG ID 5
-                    return new BinaryToMovementReturn(messageType, parseReportType_5_AndSend(messageType, binary, sentence));
+                    return new BinaryToMovementReturn(messageType, parseReportType_5(messageType, binary, sentence));
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
                     return new BinaryToMovementReturn(messageType, parseReportType_18(messageType, binary, sentence));
                 case 24:
                     // MSG ID 24
-                    return new BinaryToMovementReturn(messageType, parseReportType_24_AndSend(messageType, binary));
+                    return new BinaryToMovementReturn(messageType, parseReportType_24(messageType, binary));
                 default:
                     return null;
             }
@@ -296,7 +292,7 @@ public class ProcessService {
     }
 
     // first draft for type 5
-    private Boolean parseReportType_5_AndSend(Integer messageType, String binary, String sentence) {
+    private AssetDTO parseReportType_5(Integer messageType, String binary, String sentence) {
 
 
         ReceiveAssetInformationRequest req = new ReceiveAssetInformationRequest();
@@ -305,7 +301,7 @@ public class ProcessService {
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
         String ircs = conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
-        String shipType = conversion.getAsciiStringFromBinaryString(binary.substring(232, 240));
+        Integer shipType = Integer.parseInt(binary.substring(232, 240), 2);
 
         String cc = mmsi.substring(0, 3);
         String ansi3 = conversion.getAnsi3ForCountryCode(cc);
@@ -315,10 +311,9 @@ public class ProcessService {
 
         assetDTO.setName(vesselName);
         assetDTO.setIrcs(ircs);
-        assetDTO.setVesselType(shipType);
+        assetDTO.setVesselType(conversion.getShiptypeForCode(shipType));
         assetDTO.setFlagStateCode(ansi3);
-        Boolean ret = sendAssetUpdateToExchange(assetDTO);
-        return ret;
+        return assetDTO;
 
     }
 
@@ -361,7 +356,7 @@ public class ProcessService {
         return movement;
     }
 
-    private Boolean parseReportType_24_AndSend(Integer messageType, String binary) throws NumberFormatException {
+    private AssetDTO parseReportType_24(Integer messageType, String binary) throws NumberFormatException {
 
         if (binary == null || binary.trim().length() < 1) {
             return null;
@@ -372,10 +367,9 @@ public class ProcessService {
         //movement.setAisMessageType(messageType);
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String vesselName = "";
-        String shipType = "";
+        Integer shipType = null;
         String ircs = "";
         String ansi3 = "";
-
 
         // if partNumber == 0   the rest of the message is interpreted as a Part A
         // if partNumber == 1   the rest of the message is interpreted as a Part B
@@ -385,23 +379,21 @@ public class ProcessService {
         if (partNumber.equals(0)) {
             vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(40, 160));
         } else if (partNumber.equals(1)) {
-            shipType = conversion.getAsciiStringFromBinaryString(binary.substring(40, 48));
+            shipType = Integer.parseInt(binary.substring(40,48), 2);
             ircs = conversion.getAsciiStringFromBinaryString(binary.substring(90, 132));
-
             String cc = mmsi.substring(0, 3);
             ansi3 = conversion.getAnsi3ForCountryCode(cc);
-
-
         }
 
         AssetDTO assetDTO = new AssetDTO();
         assetDTO.setMmsi(mmsi);
         assetDTO.setName(vesselName);
         assetDTO.setIrcs(ircs);
-        assetDTO.setVesselType(shipType);
+        if(shipType != null) {
+            assetDTO.setVesselType(conversion.getShiptypeForCode(shipType));
+        }
         assetDTO.setFlagStateCode(ansi3);
-        Boolean ret = sendAssetUpdateToExchange(assetDTO);
-        return ret;
+        return assetDTO;
 
     }
 
@@ -522,23 +514,11 @@ public class ProcessService {
             // emit
 
             try {
-
                 BytesMessage message_bytes = session.createBytesMessage();
                 message_bytes.setStringProperty("source", "AIS");
                 message_bytes.setStringProperty("type", "byte");
                 message_bytes.writeBytes(movement.getBytes());
                 producer.send(message_bytes);
-
-                /*
-
-                TextMessage message_text = session.createTextMessage();
-                message_text.setStringProperty("source", "AIS");
-                message_bytes.setStringProperty("type", "text");
-                message_text.setText(movement);
-                producer.send(message_text);
-
-                */
-
             } catch (Exception e) {
                 LOG.info("//NOP: {}", e.getLocalizedMessage());
             }

@@ -24,12 +24,101 @@ public class Conversion {
     public static Map<String, String> symbolMap;
     public static Map<String, Character> binToAsciiMap;
     public static Map<String, CountryCode> countryCodeMap;
+    public static Map<Integer, String> shipTypeMap;
 
 
     public Conversion(){
         buildSymbolMap();
         buildBinToAsciiMap();
         buildCountryCodeMap();
+        buildShiptypeMap();
+    }
+
+    private void buildShiptypeMap() {
+        shipTypeMap = new TreeMap<>();
+
+        shipTypeMap.put(0,"Not available (default)");
+        shipTypeMap.put(1-19,"Reserved for future use");
+        shipTypeMap.put(20,"Wing in ground (WIG) all ships of this type");
+        shipTypeMap.put(21,"Wing in ground (WIG) Hazardous category A");
+        shipTypeMap.put(22,"Wing in ground (WIG) Hazardous category B");
+        shipTypeMap.put(23,"Wing in ground (WIG) Hazardous category C");
+        shipTypeMap.put(24,"Wing in ground (WIG) Hazardous category D");
+        shipTypeMap.put(25,"Wing in ground (WIG) Reserved for future use");
+        shipTypeMap.put(26,"Wing in ground (WIG) Reserved for future use");
+        shipTypeMap.put(27,"Wing in ground (WIG) Reserved for future use");
+        shipTypeMap.put(28,"Wing in ground (WIG) Reserved for future use");
+        shipTypeMap.put(29,"Wing in ground (WIG) Reserved for future use");
+        shipTypeMap.put(30,"Fishing");
+        shipTypeMap.put(31,"Towing");
+        shipTypeMap.put(32,"Towing: length exceeds 200m or breadth exceeds 25m");
+        shipTypeMap.put(33,"Dredging or underwater ops");
+        shipTypeMap.put(34,"Diving ops");
+        shipTypeMap.put(35,"Military ops");
+        shipTypeMap.put(36,"Sailing");
+        shipTypeMap.put(37,"Pleasure Craft");
+        shipTypeMap.put(38,"Reserved");
+        shipTypeMap.put(39,"Reserved");
+        shipTypeMap.put(40,"High speed craft (HSC) all ships of this type");
+        shipTypeMap.put(41,"High speed craft (HSC) Hazardous category A");
+        shipTypeMap.put(42,"High speed craft (HSC) Hazardous category B");
+        shipTypeMap.put(43,"High speed craft (HSC) Hazardous category C");
+        shipTypeMap.put(44,"High speed craft (HSC) Hazardous category D");
+        shipTypeMap.put(45,"High speed craft (HSC) Reserved for future use");
+        shipTypeMap.put(46,"High speed craft (HSC) Reserved for future use");
+        shipTypeMap.put(47,"High speed craft (HSC) Reserved for future use");
+        shipTypeMap.put(48,"High speed craft (HSC) Reserved for future use");
+        shipTypeMap.put(49,"High speed craft (HSC) No additional information");
+        shipTypeMap.put(50,"Pilot Vessel");
+        shipTypeMap.put(51,"Search and Rescue vessel");
+        shipTypeMap.put(52,"Tug");
+        shipTypeMap.put(53,"Port Tender");
+        shipTypeMap.put(54,"Anti-pollution equipment");
+        shipTypeMap.put(55,"Law Enforcement");
+        shipTypeMap.put(56,"Spare - Local Vessel");
+        shipTypeMap.put(57,"Spare - Local Vessel");
+        shipTypeMap.put(58,"Medical Transport");
+        shipTypeMap.put(59,"Noncombatant ship according to RR Resolution No. 18");
+        shipTypeMap.put(60,"Passenger all ships of this type");
+        shipTypeMap.put(61,"Passenger Hazardous category A");
+        shipTypeMap.put(62,"Passenger Hazardous category B");
+        shipTypeMap.put(63,"Passenger Hazardous category C");
+        shipTypeMap.put(64,"Passenger Hazardous category D");
+        shipTypeMap.put(65,"Passenger Reserved for future use");
+        shipTypeMap.put(66,"Passenger Reserved for future use");
+        shipTypeMap.put(67,"Passenger Reserved for future use");
+        shipTypeMap.put(68,"Passenger Reserved for future use");
+        shipTypeMap.put(69,"Passenger No additional information");
+        shipTypeMap.put(70,"Cargo all ships of this type");
+        shipTypeMap.put(71,"Cargo Hazardous category A");
+        shipTypeMap.put(72,"Cargo Hazardous category B");
+        shipTypeMap.put(73,"Cargo Hazardous category C");
+        shipTypeMap.put(74,"Cargo Hazardous category D");
+        shipTypeMap.put(75,"Cargo Reserved for future use");
+        shipTypeMap.put(76,"Cargo Reserved for future use");
+        shipTypeMap.put(77,"Cargo Reserved for future use");
+        shipTypeMap.put(78,"Cargo Reserved for future use");
+        shipTypeMap.put(79,"Cargo No additional information");
+        shipTypeMap.put(80,"Tanker all ships of this type");
+        shipTypeMap.put(81,"Tanker Hazardous category A");
+        shipTypeMap.put(82,"Tanker Hazardous category B");
+        shipTypeMap.put(83,"Tanker Hazardous category C");
+        shipTypeMap.put(84,"Tanker Hazardous category D");
+        shipTypeMap.put(85,"Tanker Reserved for future use");
+        shipTypeMap.put(86,"Tanker Reserved for future use");
+        shipTypeMap.put(87,"Tanker Reserved for future use");
+        shipTypeMap.put(88,"Tanker Reserved for future use");
+        shipTypeMap.put(89,"Tanker No additional information");
+        shipTypeMap.put(90,"Other Type all ships of this type");
+        shipTypeMap.put(91,"Other Type Hazardous category A");
+        shipTypeMap.put(92,"Other Type Hazardous category B");
+        shipTypeMap.put(93,"Other Type Hazardous category C");
+        shipTypeMap.put(94,"Other Type Hazardous category D");
+        shipTypeMap.put(95,"Other Type Reserved for future use");
+        shipTypeMap.put(96,"Other Type Reserved for future use");
+        shipTypeMap.put(97,"Other Type Reserved for future use");
+        shipTypeMap.put(98,"Other Type Reserved for future use");
+        shipTypeMap.put(99,"Other Type no additional information");
     }
 
     private void buildCountryCodeMap() {
@@ -327,6 +416,15 @@ public class Conversion {
     }
 
 
+    public String getShiptypeForCode(Integer code){
+        if(code == null) return "";
+        if((code < 1) || (code > 99)){
+            return "No such code : " + code;
+        }
+        return shipTypeMap.get(code);
+
+    }
+
     public String getAnsi3ForCountryCode(String countryCode)  {
 
         CountryCode cc = countryCodeMap.get(countryCode);
@@ -364,13 +462,8 @@ public class Conversion {
     }
 
     String removeTrailingSnabelA(String s) {
-        int index;
-        for (index = s.length() - 1; index >= 0; index--) {
-            if (s.charAt(index) != '@') {
-                break;
-            }
-        }
-        return s.substring(0, index + 1);
+        String ret = s.replace("@","").trim();
+        return ret;
     }
 
 
