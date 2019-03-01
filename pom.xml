@@ -18,14 +18,15 @@
         <release.branch.name>uvms-3.0.3-C3PO</release.branch.name>
 
         <uvms.common.version>3.0.29</uvms.common.version>
-        <ais.ra.version>3.0.4</ais.ra.version>
-        <exchange.model.version>4.0.30</exchange.model.version>
+        <ais.ra.version>3.0.6</ais.ra.version>
+        <exchange.model.version>4.0.33</exchange.model.version>
     </properties>
     
     <dependencies>        
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
+            <version>8.0</version>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.fisheries.uvms.exchange</groupId>

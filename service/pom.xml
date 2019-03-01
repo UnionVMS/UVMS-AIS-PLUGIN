@@ -13,8 +13,10 @@
     </parent>
 
     <properties>
-        <application.name>${project.parent.artifactId}</application.name> 
-        <application.responseTopicName>PLUGIN_RESPONSE</application.responseTopicName> 
+        <application.name>${project.parent.artifactId}</application.name>
+        <asset.client.version>6.0.27</asset.client.version>
+        <application.name>${project.parent.artifactId}</application.name>
+        <application.responseTopicName>PLUGIN_RESPONSE</application.responseTopicName>
         <application.groupid>${project.parent.groupId}</application.groupid> 
         <application.version>${project.parent.version}</application.version>
         <application.logfile>/app/logs/${project.parent.artifactId}/${project.parent.artifactId}.log</application.logfile>
@@ -26,6 +28,11 @@
             <groupId>eu.europa.ec.fisheries.uvms.exchange</groupId>
             <artifactId>exchange-model</artifactId>
             <version>${exchange.model.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.fisheries.uvms.asset</groupId>
+            <artifactId>asset-client</artifactId>
+            <version>${asset.client.version}</version>
         </dependency>
         <dependency>
 	        <groupId>org.apache.commons</groupId>
