@@ -224,8 +224,6 @@ public class ProcessService {
                     }
                     return sb.toString();
                 default:
-                    LOG.info(symbolString.charAt(0) + "      " + symbolString);
-
             }
         } catch (Exception e) {
             LOG.info("//NOP: {}", e.getLocalizedMessage());
