@@ -111,9 +111,7 @@ public class ProcessService {
             String binary = symbolToBinary(sentence);
             if (binary != null) {
                 BinaryToMovementReturn retVal = binaryToMovement(binary, sentence);
-                if (retVal == null) {
-                    sendToErrorQueueParsingError(sentence);
-                } else {
+                if (retVal != null) {
                     int messageType = retVal.getMessageType();
                     switch (messageType) {
                         case 1:
@@ -121,9 +119,7 @@ public class ProcessService {
                         case 3:
                         case 18: {
                             MovementBaseType movement = retVal.getMovementBaseType();
-                            if (movement == null) {
-                                sendToErrorQueueParsingError(sentence);
-                            } else {
+                            if (movement != null) {
                                 downSamplingControl.put(movement.getMmsi(), movement);
                             }
                             break;
