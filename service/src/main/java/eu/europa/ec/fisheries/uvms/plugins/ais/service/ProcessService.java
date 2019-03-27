@@ -467,12 +467,14 @@ public class ProcessService {
     }
 
     private Date getTimestamp(Integer utcSeconds) {
-        GregorianCalendar cal = (GregorianCalendar) GregorianCalendar.getInstance();
-        cal.setTimeInMillis(System.currentTimeMillis());
-        if (utcSeconds != null) {
-            cal.set(GregorianCalendar.SECOND, utcSeconds);
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        cal.set(Calendar.MILLISECOND, 0);
+        if (utcSeconds != null && utcSeconds >= 0 && utcSeconds < 60) {
+            cal.set(Calendar.SECOND, utcSeconds);
+            if (utcSeconds >= cal.get(Calendar.SECOND)) {
+                cal.add(Calendar.MINUTE, -1);
+            }
         }
-
         return cal.getTime();
     }
 
