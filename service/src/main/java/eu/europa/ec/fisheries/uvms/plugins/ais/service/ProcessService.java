@@ -38,6 +38,7 @@ import javax.jms.Queue;
 import javax.jms.*;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Future;
 
@@ -443,7 +444,7 @@ public class ProcessService {
 
     SetReportMovementType getMovementReport(MovementBaseType movement) {
         SetReportMovementType report = new SetReportMovementType();
-        report.setTimestamp(getTimestamp());
+        report.setTimestamp(new Date());
         report.setPluginName(startUp.getRegisterClassName());
         report.setPluginType(PluginType.OTHER);
         report.setMovement(movement);
@@ -462,18 +463,9 @@ public class ProcessService {
         return point;
     }
 
-    Date getTimestamp() {
-        return getTimestamp(null);
-    }
-
     private Date getTimestamp(Integer utcSeconds) {
-        GregorianCalendar cal = (GregorianCalendar) GregorianCalendar.getInstance();
-        cal.setTimeInMillis(System.currentTimeMillis());
-        if (utcSeconds != null) {
-            cal.set(GregorianCalendar.SECOND, utcSeconds);
-        }
-
-        return cal.getTime();
+        Instant ofEpochSecond = Instant.ofEpochSecond(utcSeconds);
+        return Date.from(ofEpochSecond);
     }
 
     private Integer parseToNumeric(String fieldName, String str) throws NumberFormatException {
