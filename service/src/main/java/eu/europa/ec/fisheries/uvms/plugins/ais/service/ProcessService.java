@@ -470,10 +470,10 @@ public class ProcessService {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         cal.set(Calendar.MILLISECOND, 0);
         if (utcSeconds != null && utcSeconds >= 0 && utcSeconds < 60) {
-            cal.set(Calendar.SECOND, utcSeconds);
             if (utcSeconds >= cal.get(Calendar.SECOND)) {
                 cal.add(Calendar.MINUTE, -1);
             }
+            cal.set(Calendar.SECOND, utcSeconds);
         }
         return cal.getTime();
     }
