@@ -270,7 +270,6 @@ public class ProcessService {
         movement.setReportedSpeed(parseSpeedOverGround(binary, 50, 60));
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 61, 89), parseCoordinate(binary, 89, 116), sentence, 123);
         if (point == null) {
-            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence, binary.substring(61, 89), binary.substring(89, 116));
             return null;
         }
         movement.setPosition(point);
@@ -331,7 +330,6 @@ public class ProcessService {
         // position  longitude latitude
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 57, 85), parseCoordinate(binary, 85, 112), sentence, 18);
         if (point == null) {
-            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence, binary.substring(57, 85), binary.substring(85, 112));
             return null;
         }
         movement.setPosition(point);
