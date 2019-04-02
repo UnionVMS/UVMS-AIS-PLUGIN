@@ -30,11 +30,6 @@
             <version>${exchange.model.version}</version>
         </dependency>
         <dependency>
-            <groupId>eu.europa.ec.fisheries.uvms.asset</groupId>
-            <artifactId>asset-client</artifactId>
-            <version>${asset.client.version}</version>
-        </dependency>
-        <dependency>
 	        <groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
         </dependency>
@@ -44,11 +39,6 @@
             <version>${ais.ra.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!--dependency>
-            <groupId>eu.europa.ec.fisheries.uvms.commons</groupId>
-            <artifactId>uvms-commons-message</artifactId>
-            <version>${uvms.common.version}</version>
-        </dependency-->
     </dependencies>
     
     <build>

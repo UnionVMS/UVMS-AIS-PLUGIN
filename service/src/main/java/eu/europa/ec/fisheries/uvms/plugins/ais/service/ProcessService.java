@@ -201,6 +201,7 @@ public class ProcessService {
         } catch (JMSException e) {
             LOG.error("couldn't send movement");
         }
+        LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), movements.size());
         return new AsyncResult<Long>(new Long(System.currentTimeMillis() - start));
     }
 
