@@ -291,7 +291,15 @@ public class ProcessService {
         ReceiveAssetInformationRequest req = new ReceiveAssetInformationRequest();
         req.setMethod(ExchangeModuleMethod.RECEIVE_ASSET_INFORMATION);
 
-        String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
+        Integer mmsiNumeric = Integer.MIN_VALUE;
+        try{
+            mmsiNumeric = Integer.parseInt(binary.substring(8, 38), 2);
+        }
+        catch(NumberFormatException nfe){
+            LOG.warn("mmsi is not numeric", nfe);
+        }
+
+        String mmsi = String.valueOf(mmsiNumeric);
         String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
         String ircs = conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
         Integer shipType = Integer.parseInt(binary.substring(232, 240), 2);

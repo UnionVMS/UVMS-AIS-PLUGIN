@@ -11,26 +11,27 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.producer;
 
-import eu.europa.ec.fisheries.uvms.commons.message.impl.JMSUtils;
 import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstants;
-import eu.europa.ec.fisheries.uvms.plugins.ais.constants.ModuleQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
 import javax.jms.*;
 
 @Stateless
 @LocalBean
 public class PluginMessageProducer {
 
+    @Resource(mappedName = "java:/" + ExchangeModelConstants.EXCHANGE_MESSAGE_IN_QUEUE)
     private Queue exchangeQueue;
+
+    @Resource(mappedName = "java:/" + ExchangeModelConstants.PLUGIN_EVENTBUS)
     private Topic eventBus;
 
+    @Resource(mappedName = "java:/ConnectionFactory")
     private ConnectionFactory connectionFactory;
 
 
@@ -39,16 +40,14 @@ public class PluginMessageProducer {
 
     @PostConstruct
     public void resourceLookup() {
-        exchangeQueue = JMSUtils.lookupQueue(ExchangeModelConstants.EXCHANGE_MESSAGE_IN_QUEUE);
-        eventBus = JMSUtils.lookupTopic(ExchangeModelConstants.PLUGIN_EVENTBUS);
     }
 
     public void sendResponseMessage(String text, TextMessage requestMessage) throws JMSException {
 
-        try (Connection connection = getConnection();
-             Session session = JMSUtils.connectToQueue(connection);
-             MessageProducer producer = session.createProducer(requestMessage.getJMSReplyTo())
-             ) {
+        try (Connection connection = connectionFactory.createConnection();
+             Session session = connection.createSession(false, 1);
+             MessageProducer producer = session.createProducer(requestMessage.getJMSReplyTo());
+        ) {
 
             TextMessage message = session.createTextMessage();
             message.setJMSDestination(requestMessage.getJMSReplyTo());
@@ -63,15 +62,11 @@ public class PluginMessageProducer {
         }
     }
 
-
-
-
-
     public String sendEventBusMessage(String text, String serviceName) throws JMSException {
 
-        try (Connection connection = getConnection();
-             Session session = JMSUtils.connectToQueue(connection);
-             MessageProducer producer =  getProducer(session, eventBus)
+        try (Connection connection = connectionFactory.createConnection();
+             Session session = connection.createSession(false, 1);
+             MessageProducer producer = session.createProducer(eventBus);
         ) {
             TextMessage message = session.createTextMessage();
             message.setText(text);
@@ -83,24 +78,5 @@ public class PluginMessageProducer {
             throw e;
         }
     }
-
-    private ConnectionFactory getConnectionFactory() {
-        if (this.connectionFactory == null) {
-            this.connectionFactory = JMSUtils.lookupConnectionFactory();
-        }
-
-        return this.connectionFactory;
-    }
-
-    private Connection getConnection() throws JMSException {
-        return this.getConnectionFactory().createConnection();
-    }
-
-    private MessageProducer getProducer(Session session, Destination destination) throws JMSException {
-        MessageProducer producer = session.createProducer(destination);
-        producer.setDeliveryMode(DeliveryMode.PERSISTENT);
-        return producer;
-    }
-
 
 }
