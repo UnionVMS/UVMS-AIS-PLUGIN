@@ -416,8 +416,13 @@ public class ProcessService {
     }
 
     private Double parseCoordinate(String data, int stringStart, int stringEnd) throws NumberFormatException {
-        Integer i = Integer.parseInt(data.substring(stringStart, stringEnd), 2);
-        return (i.doubleValue() / 10000 / 60);
+
+        try {
+            Integer i = Integer.parseInt(data.substring(stringStart, stringEnd), 2);
+            return (i.doubleValue() / 10000 / 60);
+        }catch(NumberFormatException nfe){
+            return null;
+        }
     }
 
     private double parseCourseOverGround(String s, int stringStart, int stringEnd) throws NumberFormatException {
@@ -450,7 +455,7 @@ public class ProcessService {
 
     private MovementPoint getMovementPoint(Double longitude, Double latitude, String sentence, int messageType) {
 
-        if (longitude.equals(181d) || latitude.equals(91d)) {
+        if (longitude == null || latitude == null || longitude.equals(181d) || latitude.equals(91d)) {
             return null;
         }
 
