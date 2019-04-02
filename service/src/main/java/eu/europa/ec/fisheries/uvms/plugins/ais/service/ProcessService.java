@@ -270,7 +270,6 @@ public class ProcessService {
         movement.setReportedSpeed(parseSpeedOverGround(binary, 50, 60));
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 61, 89), parseCoordinate(binary, 89, 116), sentence, 123);
         if (point == null) {
-            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence, binary.substring(61, 89), binary.substring(89, 116));
             return null;
         }
         movement.setPosition(point);
@@ -292,7 +291,15 @@ public class ProcessService {
         ReceiveAssetInformationRequest req = new ReceiveAssetInformationRequest();
         req.setMethod(ExchangeModuleMethod.RECEIVE_ASSET_INFORMATION);
 
-        String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
+        Integer mmsiNumeric = Integer.MIN_VALUE;
+        try{
+            mmsiNumeric = Integer.parseInt(binary.substring(8, 38), 2);
+        }
+        catch(NumberFormatException nfe){
+            LOG.warn("mmsi is not numeric", nfe);
+        }
+
+        String mmsi = String.valueOf(mmsiNumeric);
         String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
         String ircs = conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
         Integer shipType = Integer.parseInt(binary.substring(232, 240), 2);
@@ -331,7 +338,6 @@ public class ProcessService {
         // position  longitude latitude
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 57, 85), parseCoordinate(binary, 85, 112), sentence, 18);
         if (point == null) {
-            LOG.warn("Error in position longitude or latitude in type {}  {} Lat: {}  Long: {}", messageType, sentence, binary.substring(57, 85), binary.substring(85, 112));
             return null;
         }
         movement.setPosition(point);
@@ -418,8 +424,13 @@ public class ProcessService {
     }
 
     private Double parseCoordinate(String data, int stringStart, int stringEnd) throws NumberFormatException {
-        Integer i = Integer.parseInt(data.substring(stringStart, stringEnd), 2);
-        return (i.doubleValue() / 10000 / 60);
+
+        try {
+            Integer i = Integer.parseInt(data.substring(stringStart, stringEnd), 2);
+            return (i.doubleValue() / 10000 / 60);
+        }catch(NumberFormatException nfe){
+            return null;
+        }
     }
 
     private double parseCourseOverGround(String s, int stringStart, int stringEnd) throws NumberFormatException {
@@ -452,7 +463,7 @@ public class ProcessService {
 
     private MovementPoint getMovementPoint(Double longitude, Double latitude, String sentence, int messageType) {
 
-        if (longitude.equals(181d) || latitude.equals(91d)) {
+        if (longitude == null || latitude == null || longitude.equals(181d) || latitude.equals(91d)) {
             return null;
         }
 
