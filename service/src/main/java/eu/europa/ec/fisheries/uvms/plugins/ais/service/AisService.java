@@ -11,34 +11,31 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Future;
+import eu.europa.ec.fisheries.uvms.ais.AISConnection;
+import eu.europa.ec.fisheries.uvms.ais.AISConnectionFactoryImpl;
+import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.ejb.DependsOn;
-import javax.ejb.EJB;
-import javax.ejb.Schedule;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
+import javax.ejb.*;
 import javax.inject.Inject;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.resource.ResourceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import eu.europa.ec.fisheries.uvms.ais.AISConnection;
-import eu.europa.ec.fisheries.uvms.ais.AISConnectionFactoryImpl;
-import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Future;
 
 @Singleton
 @Startup
 @DependsOn({"StartupBean"})
 public class AisService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(AisService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AisService.class);
 
     private static final int RETRY_DELAY_TIME_SEC = 10;
 
@@ -91,9 +88,9 @@ public class AisService {
         }
     }
 
-   // @Schedule(minute="*/1", hour="*", persistent=false)
-    @Schedule(second="*/30", minute="*", hour="*", persistent=false)
-    public void connectAndRetrive(){
+    // @Schedule(minute="*/1", hour="*", persistent=false)
+    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
+    public void connectAndRetrive() {
         if (!startUp.isEnabled()) {
             return;
         }
@@ -120,5 +117,16 @@ public class AisService {
             LOG.info("Got {} sentences from AIS RA. Currently running {} parallel threads", sentences.size(), processes.size());
         }
     }
+
+    // for test  6 this will be increased to 24  (1 per dygn)
+
+    @Schedule(minute = "6", hour = "*", persistent = false )
+    public void sendAssetUpdates() {
+        if (!startUp.isEnabled()) {
+            return;
+        }
+        processService.sendAssetUpdateToExchange();
+    }
+
 
 }

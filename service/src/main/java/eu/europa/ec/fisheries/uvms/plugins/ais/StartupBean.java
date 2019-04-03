@@ -16,6 +16,7 @@ import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.CapabilityListType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.ServiceType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.SettingListType;
+import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstants;
 import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshallException;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
@@ -31,6 +32,7 @@ import javax.annotation.PreDestroy;
 import javax.ejb.*;
 import javax.jms.JMSException;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
@@ -56,6 +58,8 @@ public class StartupBean extends PluginDataHolder {
     private CapabilityListType capabilities;
     private SettingListType settingList;
     private ServiceType serviceType;
+
+    private Map<String, AssetDTO> downSampledAssetInfo = new Hashtable<>();
 
     @PostConstruct
     public void startup() {
@@ -211,5 +215,12 @@ public class StartupBean extends PluginDataHolder {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
+
+    public Map<String, AssetDTO> getStoredAssetInfo(){
+        return downSampledAssetInfo;
+    }
+
+
+
 
 }
