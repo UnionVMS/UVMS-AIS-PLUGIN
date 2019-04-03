@@ -265,7 +265,14 @@ public class ProcessService {
     private MovementBaseType parseReportType_1_2_3(Integer messageType, String binary, String sentence) {
         MovementBaseType movement = new MovementBaseType();
         //movement.setAisMessageType(messageType);
-        String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
+        Integer mmsiNumeric = Integer.MIN_VALUE;
+        try{
+            mmsiNumeric = Integer.parseInt(binary.substring(8, 38), 2);
+        }
+        catch(NumberFormatException nfe){
+            LOG.warn("mmsi is not numeric", nfe);
+        }
+        String mmsi = String.valueOf(mmsiNumeric);
         movement.setMmsi(mmsi);
         movement.setAssetId(getAssetId(mmsi));
         movement.setReportedSpeed(parseSpeedOverGround(binary, 50, 60));
@@ -277,11 +284,15 @@ public class ProcessService {
         movement.setReportedCourse(parseCourseOverGround(binary, 116, 128));
 
         // trueHeading
+        String cc = mmsi.substring(0, 3);
+        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
+
         String trueHeadingStr = binary.substring(128, 137);
         Integer trueHeading = parseToNumeric("TrueHeading", trueHeadingStr);
         movement.setTrueHeading(trueHeading);
         movement.setPositionTime(getTimestamp(Integer.parseInt(binary.substring(137, 143), 2)));
         movement.setSource(MovementSourceType.AIS);
+        movement.setFlagState(ansi3);
         return movement;
     }
 
@@ -299,8 +310,8 @@ public class ProcessService {
         catch(NumberFormatException nfe){
             LOG.warn("mmsi is not numeric", nfe);
         }
-
         String mmsi = String.valueOf(mmsiNumeric);
+
         String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
         String ircs = conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
         Integer shipType = Integer.parseInt(binary.substring(232, 240), 2);
@@ -328,7 +339,14 @@ public class ProcessService {
         MovementBaseType movement = new MovementBaseType();
 
         // mmsi
-        String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
+        Integer mmsiNumeric = Integer.MIN_VALUE;
+        try{
+            mmsiNumeric = Integer.parseInt(binary.substring(8, 38), 2);
+        }
+        catch(NumberFormatException nfe){
+            LOG.warn("mmsi is not numeric", nfe);
+        }
+        String mmsi = String.valueOf(mmsiNumeric);
         movement.setMmsi(mmsi);
         movement.setAssetId(getAssetId(mmsi));
 
@@ -351,9 +369,14 @@ public class ProcessService {
         Integer trueHeading = parseToNumeric("TrueHeading", trueHeadingStr);
         movement.setTrueHeading(trueHeading);
 
+        String cc = mmsi.substring(0, 3);
+        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
+
+
         // timestamp
         movement.setPositionTime(getTimestamp(Integer.parseInt(binary.substring(133, 139), 2)));
         movement.setSource(MovementSourceType.AIS);
+        movement.setFlagState(ansi3);
         return movement;
     }
 
