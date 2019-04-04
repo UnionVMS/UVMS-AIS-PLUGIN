@@ -254,7 +254,7 @@ public class ProcessService {
                 default:
                     return null;
             }
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             sendToErrorQueueParsingError(sentence);
             LOG.error(e.getMessage(), e);
 
