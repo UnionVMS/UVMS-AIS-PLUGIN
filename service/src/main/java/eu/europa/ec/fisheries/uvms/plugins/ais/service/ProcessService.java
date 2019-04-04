@@ -104,7 +104,6 @@ public class ProcessService {
     public Future<Long> processMessages(List<String> sentences) {
 
         Map<String, MovementBaseType> downSamplingControl = new HashMap<>();
-        List<AssetDTO> assetInfo = new ArrayList<>();
 
         // collect
         for (String sentence : sentences) {
@@ -127,18 +126,20 @@ public class ProcessService {
                         case 5:
                         case 24: {
                             AssetDTO assetDto  = retVal.getAssetDTO();
-                            assetInfo.add(assetDto);
+                            startUp.getStoredAssetInfo().put(assetDto.getMmsi(), assetDto);
                             break;
                         }
                     }
                 }
             }
         }
-        sendAssetUpdateToExchange(assetInfo);
         return sendToExchange(downSamplingControl);
     }
 
-    public boolean sendAssetUpdateToExchange(List<AssetDTO> assets) {
+    public boolean sendAssetUpdateToExchange() {
+
+        List<AssetDTO> assets = new ArrayList(startUp.getStoredAssetInfo().values());
+        startUp.getStoredAssetInfo().clear();
 
         boolean ok = true;
         String json = jsonb.toJson(assets);
