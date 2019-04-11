@@ -68,7 +68,7 @@ public class TestStartupBean {
         startupBean.startup();
 
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(messageProducer, Mockito.times(1)).sendEventBusMessage(messageCaptor.capture(), Mockito.eq(ExchangeModelConstants.EXCHANGE_REGISTER_SERVICE));
+        Mockito.verify(messageProducer, Mockito.times(1)).sendEventBusMessage(messageCaptor.capture(), Mockito.eq(ExchangeModelConstants.EXCHANGE_REGISTER_SERVICE), Mockito.eq(ExchangeRegistryMethod.REGISTER_SERVICE.value()));
         verifyRequest(unmarshallMessage(messageCaptor.getValue()));
     }
 

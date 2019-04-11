@@ -62,7 +62,7 @@ public class PluginMessageProducer {
         }
     }
 
-    public String sendEventBusMessage(String text, String serviceName) throws JMSException {
+    public String sendEventBusMessage(String text, String serviceName, String function) throws JMSException {
 
         try (Connection connection = connectionFactory.createConnection();
              Session session = connection.createSession(false, 1);
@@ -71,6 +71,7 @@ public class PluginMessageProducer {
             TextMessage message = session.createTextMessage();
             message.setText(text);
             message.setStringProperty(ExchangeModelConstants.SERVICE_NAME, serviceName);
+            message.setStringProperty("FUNCTION", function);
             producer.send(message);
             return message.getJMSMessageID();
         } catch (JMSException e) {
