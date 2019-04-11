@@ -22,7 +22,6 @@ import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementSourceType;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.SetReportMovementType;
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
 import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
-import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshallException;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 import org.slf4j.Logger;
@@ -38,6 +37,7 @@ import javax.jms.Queue;
 import javax.jms.*;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Future;
 
@@ -153,9 +153,10 @@ public class ProcessService {
             try {
                 String text = ExchangeModuleRequestMapper.createReceiveAssetInformation(json, "AIS", PluginType.OTHER);
                 TextMessage message = session.createTextMessage();
+                message.setStringProperty("FUNCTION", ExchangeModuleMethod.RECEIVE_ASSET_INFORMATION.toString());
                 message.setText(text);
                 producer.send(message);
-            } catch (ExchangeModelMarshallException e) {
+            } catch (RuntimeException e) {
                 LOG.error("Couldn't map movement to setreportmovementtype");
                 sendToErrorQueueParsingError(json);
             } catch (Exception e) {
@@ -185,11 +186,12 @@ public class ProcessService {
 
                 try {
                     SetReportMovementType movementReport = getMovementReport(movement);
-                    String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, new Date(), null, PluginType.OTHER, "AIS", null);
+                    String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, Instant.now(),  PluginType.OTHER, "AIS", null);
                     TextMessage message = session.createTextMessage();
+                    message.setStringProperty("FUNCTION", ExchangeModuleMethod.SET_MOVEMENT_REPORT.value());
                     message.setText(text);
                     producer.send(message);
-                } catch (ExchangeModelMarshallException e) {
+                } catch (RuntimeException e) {
                     LOG.error("Couldn't map movement to setreportmovementtype");
                     sendToErrorQueueParsingError(movement.toString());
                 } catch (JMSException e) {

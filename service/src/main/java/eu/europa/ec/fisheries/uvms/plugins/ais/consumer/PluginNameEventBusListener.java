@@ -26,15 +26,11 @@ import org.slf4j.LoggerFactory;
 
 import eu.europa.ec.fisheries.schema.exchange.common.v1.AcknowledgeType;
 import eu.europa.ec.fisheries.schema.exchange.common.v1.AcknowledgeTypeType;
-import eu.europa.ec.fisheries.schema.exchange.plugin.v1.PingRequest;
 import eu.europa.ec.fisheries.schema.exchange.plugin.v1.PluginBaseRequest;
 import eu.europa.ec.fisheries.schema.exchange.plugin.v1.SetCommandRequest;
 import eu.europa.ec.fisheries.schema.exchange.plugin.v1.SetConfigRequest;
 import eu.europa.ec.fisheries.schema.exchange.plugin.v1.SetReportRequest;
-import eu.europa.ec.fisheries.schema.exchange.plugin.v1.StartRequest;
-import eu.europa.ec.fisheries.schema.exchange.plugin.v1.StopRequest;
 import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstants;
-import eu.europa.ec.fisheries.uvms.exchange.model.exception.ExchangeModelMarshallException;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangePluginResponseMapper;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.JAXBMarshaller;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
@@ -113,7 +109,7 @@ public class PluginNameEventBusListener implements MessageListener {
 
             messageProducer.sendResponseMessage(responseMessage, textMessage);
 
-        } catch (ExchangeModelMarshallException | NullPointerException e) {
+        } catch (RuntimeException e) {
             LOG.error("[ Error when receiving message in ais " + startup.getRegisterClassName() + " ]", e);
         } catch (JMSException ex) {
             LOG.error("[ Error when handling JMS message in ais " + startup.getRegisterClassName() + " ]", ex);
