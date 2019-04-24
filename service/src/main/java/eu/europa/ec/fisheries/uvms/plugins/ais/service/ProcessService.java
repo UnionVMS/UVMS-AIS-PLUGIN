@@ -329,6 +329,7 @@ public class ProcessService {
         assetDTO.setIrcs(ircs);
         assetDTO.setVesselType(conversion.getShiptypeForCode(shipType));
         assetDTO.setFlagStateCode(ansi3);
+        assetDTO.setUpdatedBy("AIS Message Type 5");
         return assetDTO;
 
     }
@@ -420,6 +421,7 @@ public class ProcessService {
             assetDTO.setVesselType(conversion.getShiptypeForCode(shipType));
         }
         assetDTO.setFlagStateCode(ansi3);
+        assetDTO.setUpdatedBy("AIS Message Type 24");
         return assetDTO;
 
     }
