@@ -102,7 +102,7 @@ public class ProcessService {
     private Conversion conversion;
 
     @Inject
-    @Metric
+    @Metric(name = "ais_incoming", absolute = true)
     Counter aisIncoming;
 
     @Asynchronous
