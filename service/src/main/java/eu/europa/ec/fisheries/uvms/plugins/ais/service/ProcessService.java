@@ -24,6 +24,8 @@ import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
 import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
+import org.eclipse.microprofile.metrics.Counter;
+import org.eclipse.microprofile.metrics.annotation.Metric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +101,9 @@ public class ProcessService {
     @Inject
     private Conversion conversion;
 
+    @Inject
+    @Metric(name = "ais_incoming", absolute = true)
+    Counter aisIncoming;
 
     @Asynchronous
     public Future<Long> processMessages(List<String> sentences) {
@@ -191,6 +196,7 @@ public class ProcessService {
                     message.setStringProperty("FUNCTION", ExchangeModuleMethod.SET_MOVEMENT_REPORT.value());
                     message.setText(text);
                     producer.send(message);
+                    aisIncoming.inc();
                 } catch (RuntimeException e) {
                     LOG.error("Couldn't map movement to setreportmovementtype");
                     sendToErrorQueueParsingError(movement.toString());
