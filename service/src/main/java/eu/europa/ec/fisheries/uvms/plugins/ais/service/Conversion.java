@@ -11,6 +11,9 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
 import java.util.ArrayList;
@@ -20,6 +23,8 @@ import java.util.TreeMap;
 
 @Singleton
 public class Conversion {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Conversion.class);
 
     public static Map<String, String> symbolMap;
     public static Map<String, Character> binToAsciiMap;
@@ -428,7 +433,10 @@ public class Conversion {
     public String getAnsi3ForCountryCode(String countryCode)  {
 
         CountryCode cc = countryCodeMap.get(countryCode);
-        if(cc == null) return "ERR";
+        if(cc == null){
+            LOG.error("Unknown country code: " + countryCode);
+            return "ERR";
+        }
         return cc.getAnsi3();
     }
 
