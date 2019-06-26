@@ -17,9 +17,9 @@
     <properties>
         <release.branch.name>uvms-3.0.3-C3PO</release.branch.name>
 
-        <uvms.common.version>3.0.29</uvms.common.version>
+        <uvms.common.version>4.0.1</uvms.common.version>
         <ais.ra.version>3.0.6</ais.ra.version>
-        <exchange.model.version>5.0.0-UVMS</exchange.model.version>
+        <exchange.model.version>5.0.8-UVMS</exchange.model.version>
     </properties>
     
     <dependencies>        
