@@ -129,6 +129,7 @@ public class Conversion {
     private void buildCountryCodeMap() {
         countryCodeMap = new TreeMap<>();
 
+        /* This mapper is taken from: http://www.vtexplorer.com/mmsi-mid-codes-en/ */
         countryCodeMap.put("201",new CountryCode("201","Albania","AL","ALB"));
         countryCodeMap.put("202",new CountryCode("202","Andorra","AD","AND"));
         countryCodeMap.put("203",new CountryCode("203","Austria","AT","AUT"));
