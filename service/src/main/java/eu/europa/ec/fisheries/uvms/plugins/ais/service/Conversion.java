@@ -436,7 +436,7 @@ public class Conversion {
 
         CountryCode cc = countryCodeMap.get(countryCode);
         if(cc == null){
-            LOG.error("Unknown country code: " + countryCode);
+            LOG.warn("Unknown country code: " + countryCode);
             return "ERR";
         }
         return cc.getAnsi3();
