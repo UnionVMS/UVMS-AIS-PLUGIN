@@ -14,8 +14,6 @@ package eu.europa.ec.fisheries.uvms.plugins.ais.consumer;
 import javax.ejb.ActivationConfigProperty;
 import javax.ejb.EJB;
 import javax.ejb.MessageDriven;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
@@ -45,7 +43,7 @@ import eu.europa.ec.fisheries.uvms.plugins.ais.service.PluginService;
 })
 public class PluginNameEventBusListener implements MessageListener {
 
-    final static Logger LOG = LoggerFactory.getLogger(PluginNameEventBusListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PluginNameEventBusListener.class);
 
     @EJB
     PluginService service;
@@ -57,7 +55,6 @@ public class PluginNameEventBusListener implements MessageListener {
     StartupBean startup;
 
     @Override
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void onMessage(Message inMessage) {
 
         LOG.debug("Eventbus listener for ais (MessageConstants.PLUGIN_SERVICE_CLASS_NAME): {}", startup.getRegisterClassName());

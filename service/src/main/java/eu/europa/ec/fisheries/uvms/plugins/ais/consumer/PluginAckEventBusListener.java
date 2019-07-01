@@ -35,7 +35,7 @@ import javax.jms.TextMessage;
 })
 public class PluginAckEventBusListener implements MessageListener {
 
-    final static Logger LOG = LoggerFactory.getLogger(PluginAckEventBusListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PluginAckEventBusListener.class);
 
     @EJB
     StartupBean startupService;
@@ -44,7 +44,6 @@ public class PluginAckEventBusListener implements MessageListener {
     PluginService aisService;
 
     @Override
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void onMessage(Message inMessage) {
 
         LOG.info("Eventbus listener for ais at selector: {} got a message", startupService.getPluginResponseSubscriptionName());
