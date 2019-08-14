@@ -403,7 +403,7 @@ public class ProcessService {
         String vesselName = "";
         Integer shipType = null;
         String ircs = "";
-        String ansi3 = "";
+        String ansi3 = null;
 
         // if partNumber == 0   the rest of the message is interpreted as a Part A
         // if partNumber == 1   the rest of the message is interpreted as a Part B
