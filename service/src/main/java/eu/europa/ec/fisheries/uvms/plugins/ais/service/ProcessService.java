@@ -292,9 +292,11 @@ public class ProcessService {
         movement.setPosition(point);
         movement.setReportedCourse(parseCourseOverGround(binary, 116, 128));
 
-        // trueHeading
-        String cc = mmsi.substring(0, 3);
-        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
+        String ansi3 = "ERR";
+        if(mmsi != null && mmsi.length() >= 3) {
+            String cc = mmsi.substring(0, 3);
+            ansi3 = conversion.getAnsi3ForCountryCode(cc);
+        }
 
         String trueHeadingStr = binary.substring(128, 137);
         Integer trueHeading = parseToNumeric("TrueHeading", trueHeadingStr);
