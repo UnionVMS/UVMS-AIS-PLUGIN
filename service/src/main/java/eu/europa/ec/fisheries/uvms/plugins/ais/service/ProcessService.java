@@ -271,6 +271,15 @@ public class ProcessService {
         return null;
     }
 
+    private String getAnsi3FromMMSI(String mmsi){
+        String ansi3 = "ERR";
+        if(mmsi != null && mmsi.length() >= 3) {
+            String cc = mmsi.substring(0, 3);
+            ansi3 = conversion.getAnsi3ForCountryCode(cc);
+        }
+        return ansi3;
+    }
+
     private MovementBaseType parseReportType_1_2_3(Integer messageType, String binary, String sentence) {
         MovementBaseType movement = new MovementBaseType();
         //movement.setAisMessageType(messageType);
@@ -292,11 +301,7 @@ public class ProcessService {
         movement.setPosition(point);
         movement.setReportedCourse(parseCourseOverGround(binary, 116, 128));
 
-        String ansi3 = "ERR";
-        if(mmsi != null && mmsi.length() >= 3) {
-            String cc = mmsi.substring(0, 3);
-            ansi3 = conversion.getAnsi3ForCountryCode(cc);
-        }
+        String ansi3 = getAnsi3FromMMSI(mmsi);
 
         String trueHeadingStr = binary.substring(128, 137);
         Integer trueHeading = parseToNumeric("TrueHeading", trueHeadingStr);
@@ -327,8 +332,7 @@ public class ProcessService {
         String ircs = conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
         Integer shipType = Integer.parseInt(binary.substring(232, 240), 2);
 
-        String cc = mmsi.substring(0, 3);
-        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
+        String ansi3 = getAnsi3FromMMSI(mmsi);
 
         AssetDTO assetDTO = new AssetDTO();
         assetDTO.setMmsi(mmsi);
@@ -381,9 +385,7 @@ public class ProcessService {
         Integer trueHeading = parseToNumeric("TrueHeading", trueHeadingStr);
         movement.setTrueHeading(trueHeading);
 
-        String cc = mmsi.substring(0, 3);
-        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
-
+        String ansi3 = getAnsi3FromMMSI(mmsi);
 
         // timestamp
         movement.setPositionTime(getTimestamp(Integer.parseInt(binary.substring(133, 139), 2)));
@@ -417,8 +419,7 @@ public class ProcessService {
         } else if (partNumber.equals(1)) {
             shipType = Integer.parseInt(binary.substring(40,48), 2);
             ircs = conversion.getAsciiStringFromBinaryString(binary.substring(90, 132));
-            String cc = mmsi.substring(0, 3);
-            ansi3 = conversion.getAnsi3ForCountryCode(cc);
+            ansi3 = getAnsi3FromMMSI(mmsi);
         }
 
         AssetDTO assetDTO = new AssetDTO();
