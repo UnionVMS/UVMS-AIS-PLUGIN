@@ -104,7 +104,7 @@ public class StartupBean extends PluginDataHolder {
     public void timeout(Timer timer) {
 
         try {
-            if (!waitingForResponse && !registered && numberOfTriesExecuted < MAX_NUMBER_OF_TRIES) {
+            if (!registered && numberOfTriesExecuted < MAX_NUMBER_OF_TRIES) {
                 LOG.info(getRegisterClassName() + " is not registered, trying to register");
                 register();
                 numberOfTriesExecuted++;
