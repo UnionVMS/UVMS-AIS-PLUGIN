@@ -37,8 +37,6 @@ public class AisService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AisService.class);
 
-    private static final int RETRY_DELAY_TIME_SEC = 10;
-
     @Inject
     StartupBean startUp;
 
