@@ -52,38 +52,7 @@ public class ProcessService {
 
     private Jsonb jsonb = JsonbBuilder.create();
 
-
-    class BinaryToMovementReturn {
-        private int messageType;
-        private MovementBaseType movementBaseType;
-        private AssetDTO assetDto;
-
-        public BinaryToMovementReturn(int messageType, MovementBaseType movementBaseType) {
-            this.messageType = messageType;
-            this.movementBaseType = movementBaseType;
-            this.assetDto = null;
-        }
-
-        public BinaryToMovementReturn(int messageType, AssetDTO assetDto) {
-            this.messageType = messageType;
-            this.movementBaseType = null;
-            this.assetDto = assetDto;
-        }
-
-        public MovementBaseType getMovementBaseType() {
-            return movementBaseType;
-        }
-
-        public AssetDTO getAssetDTO() {
-            return assetDto;
-        }
-
-        public int getMessageType() {
-            return messageType;
-        }
-    }
-
-    final static Logger LOG = LoggerFactory.getLogger(ProcessService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProcessService.class);
 
     @Resource(mappedName = "java:/ConnectionFactory")
     private ConnectionFactory connectionFactory;
@@ -121,19 +90,19 @@ public class ProcessService {
                         case 1:
                         case 2:
                         case 3:
-                        case 18: {
+                        case 18:
                             MovementBaseType movement = retVal.getMovementBaseType();
                             if (movement != null) {
                                 downSamplingControl.put(movement.getMmsi(), movement);
                             }
                             break;
-                        }
                         case 5:
-                        case 24: {
+                        case 24: 
                             AssetDTO assetDto  = retVal.getAssetDTO();
                             startUp.getStoredAssetInfo().put(assetDto.getMmsi(), assetDto);
                             break;
-                        }
+                        default:
+                            break;
                     }
                 }
             }
@@ -143,7 +112,7 @@ public class ProcessService {
 
     public boolean sendAssetUpdateToExchange() {
 
-        List<AssetDTO> assets = new ArrayList(startUp.getStoredAssetInfo().values());
+        List<AssetDTO> assets = new ArrayList<>(startUp.getStoredAssetInfo().values());
         startUp.getStoredAssetInfo().clear();
 
         boolean ok = true;
@@ -571,29 +540,34 @@ public class ProcessService {
             LOG.error("couldn't send movement");
         }
     }
+    
+    private class BinaryToMovementReturn {
+        private int messageType;
+        private MovementBaseType movementBaseType;
+        private AssetDTO assetDto;
 
-    private void sendToErrorQueue(String movement) {
-        try (
-                Connection connection = connectionFactory.createConnection();
-                Session session = connection.createSession(false, 1);
-                MessageProducer producer = session.createProducer(errorQueue)
-        ) {
-            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+        public BinaryToMovementReturn(int messageType, MovementBaseType movementBaseType) {
+            this.messageType = messageType;
+            this.movementBaseType = movementBaseType;
+            this.assetDto = null;
+        }
 
-            // emit
+        public BinaryToMovementReturn(int messageType, AssetDTO assetDto) {
+            this.messageType = messageType;
+            this.movementBaseType = null;
+            this.assetDto = assetDto;
+        }
 
-            try {
-                TextMessage message = session.createTextMessage();
-                message.setStringProperty("source", "AIS");
-                message.setText(movement);
-                producer.send(message);
-            } catch (Exception e) {
-                LOG.info("//NOP: {}", e.getLocalizedMessage());
-            }
-        } catch (JMSException e) {
-            LOG.error("couldn't send movement");
+        public MovementBaseType getMovementBaseType() {
+            return movementBaseType;
+        }
+
+        public AssetDTO getAssetDTO() {
+            return assetDto;
+        }
+
+        public int getMessageType() {
+            return messageType;
         }
     }
-
-
 }
