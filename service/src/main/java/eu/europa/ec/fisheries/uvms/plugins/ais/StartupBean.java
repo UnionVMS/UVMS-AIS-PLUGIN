@@ -24,6 +24,8 @@ import eu.europa.ec.fisheries.uvms.plugins.ais.mapper.ServiceMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.producer.PluginMessageProducer;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.FileHandlerBean;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.ProcessService;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Gauge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,18 +34,19 @@ import javax.annotation.PreDestroy;
 import javax.ejb.*;
 import javax.jms.JMSException;
 import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Singleton
 @Startup
 @DependsOn({"PluginMessageProducer", "FileHandlerBean", "PluginAckEventBusListener"})
 public class StartupBean extends PluginDataHolder {
 
-    final static Logger LOG = LoggerFactory.getLogger(StartupBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StartupBean.class);
 
-    private final static int MAX_NUMBER_OF_TRIES = 10;
+    private static final int MAX_NUMBER_OF_TRIES = 10;
     @EJB
     PluginMessageProducer messageProducer;
     @EJB
@@ -59,7 +62,8 @@ public class StartupBean extends PluginDataHolder {
     private SettingListType settingList;
     private ServiceType serviceType;
 
-    private Map<String, AssetDTO> downSampledAssetInfo = new Hashtable<>();
+    private Map<String, AssetDTO> downSampledAssetInfo = new HashMap<>();
+    private Set<String> knownFishingVessels = new HashSet<>();
 
     @PostConstruct
     public void startup() {
@@ -125,9 +129,7 @@ public class StartupBean extends PluginDataHolder {
         try {
             if (registered) {
                 List<MovementBaseType> list = getAndClearCachedMovementList();
-                final Map<String, MovementBaseType> theMap = new HashMap<>();
-                list.forEach(e -> theMap.put(e.getMmsi(), e));
-                processService.sendToExchange(theMap);
+                processService.sendToExchange(list);
             }
         } catch (Exception e) {
             LOG.error(e.toString(), e);
@@ -220,7 +222,12 @@ public class StartupBean extends PluginDataHolder {
         return downSampledAssetInfo;
     }
 
+    public Set<String> getKnownFishingVessels(){
+        return knownFishingVessels;
+    }
 
-
-
+    @Gauge(unit = MetricUnits.NONE, name = "ais_knownfishingvessels_size", absolute = true)
+    public int getKnownFishingVesselsSize() {
+        return knownFishingVessels.size();
+    }
 }

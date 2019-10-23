@@ -42,6 +42,8 @@ import javax.json.bind.JsonbBuilder;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -78,36 +80,42 @@ public class ProcessService {
     public Future<Long> processMessages(List<String> sentences) {
 
         Map<String, MovementBaseType> downSamplingControl = new HashMap<>();
+        List<MovementBaseType> movements = new ArrayList<>(); 
 
         // collect
         for (String sentence : sentences) {
             String binary = symbolToBinary(sentence);
-            if (binary != null) {
-                BinaryToMovementReturn retVal = binaryToMovement(binary, sentence);
-                if (retVal != null) {
-                    int messageType = retVal.getMessageType();
-                    switch (messageType) {
-                        case 1:
-                        case 2:
-                        case 3:
-                        case 18:
-                            MovementBaseType movement = retVal.getMovementBaseType();
-                            if (movement != null) {
-                                downSamplingControl.put(movement.getMmsi(), movement);
-                            }
-                            break;
-                        case 5:
-                        case 24: 
-                            AssetDTO assetDto  = retVal.getAssetDTO();
-                            startUp.getStoredAssetInfo().put(assetDto.getMmsi(), assetDto);
-                            break;
-                        default:
-                            break;
+            BinaryToMovementReturn retVal = binaryToMovement(binary, sentence);
+            if (retVal != null && retVal.getMessageType().equals(MessageType.MOVEMENT)) {
+                MovementBaseType movement = retVal.getMovementBaseType();
+                if (movement != null) {
+                    if (isFishingVessel(movement.getMmsi())) {
+                        movements.add(movement);
+                    } else {
+                        downSamplingControl.put(movement.getMmsi(), movement);
                     }
                 }
+            } else if (retVal != null && retVal.getMessageType().equals(MessageType.ASSET)) {
+                AssetDTO assetDto  = retVal.getAssetDTO();
+                startUp.getStoredAssetInfo().put(assetDto.getMmsi(), assetDto);
+                addFishingVessels(assetDto);
             }
         }
-        return sendToExchange(downSamplingControl);
+        return sendToExchange(Stream.of(movements, downSamplingControl.values())
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList()));
+    }
+
+    private void addFishingVessels(AssetDTO asset) {
+        if (asset.getVesselType() != null && asset.getVesselType().equals("Fishing")) {
+            startUp.getKnownFishingVessels().add(asset.getMmsi());
+        } else if (startUp.getKnownFishingVessels().contains(asset.getMmsi())) {
+            startUp.getKnownFishingVessels().remove(asset.getMmsi());
+        }
+    }
+
+    private boolean isFishingVessel(String mmsi) {
+        return startUp.getKnownFishingVessels().contains(mmsi);
     }
 
     public boolean sendAssetUpdateToExchange() {
@@ -144,7 +152,7 @@ public class ProcessService {
     }
 
 
-    public Future<Long> sendToExchange(Map<String, MovementBaseType> movements) {
+    public Future<Long> sendToExchange(List<MovementBaseType> movements) {
 
         long start = System.currentTimeMillis();
 
@@ -155,9 +163,7 @@ public class ProcessService {
             producer.setDeliveryMode(DeliveryMode.PERSISTENT);
 
             // emit
-
-            for (MovementBaseType movement : movements.values()) {
-
+            for (MovementBaseType movement : movements) {
                 try {
                     SetReportMovementType movementReport = getMovementReport(movement);
                     String text = ExchangeModuleRequestMapper.createSetMovementReportRequest(movementReport, "AIS", null, Instant.now(),  PluginType.OTHER, "AIS", null);
@@ -218,16 +224,16 @@ public class ProcessService {
                 case 1:
                 case 2:
                 case 3:
-                    return new BinaryToMovementReturn(messageType, parseReportType_1_2_3(messageType, binary, sentence));
+                    return new BinaryToMovementReturn(parseReportType_1_2_3(messageType, binary, sentence));
                 case 5:
                     // MSG ID 5
-                    return new BinaryToMovementReturn(messageType, parseReportType_5(messageType, binary, sentence));
+                    return new BinaryToMovementReturn(parseReportType_5(messageType, binary, sentence));
                 case 18:
                     // MSG ID 18 Class B Equipment Position report
-                    return new BinaryToMovementReturn(messageType, parseReportType_18(messageType, binary, sentence));
+                    return new BinaryToMovementReturn(parseReportType_18(messageType, binary, sentence));
                 case 24:
                     // MSG ID 24
-                    return new BinaryToMovementReturn(messageType, parseReportType_24(messageType, binary));
+                    return new BinaryToMovementReturn(parseReportType_24(messageType, binary));
                 default:
                     return null;
             }
@@ -541,19 +547,23 @@ public class ProcessService {
         }
     }
     
+    private enum MessageType {
+        MOVEMENT, ASSET;
+    }
+
     private class BinaryToMovementReturn {
-        private int messageType;
+        private MessageType messageType;
         private MovementBaseType movementBaseType;
         private AssetDTO assetDto;
 
-        public BinaryToMovementReturn(int messageType, MovementBaseType movementBaseType) {
-            this.messageType = messageType;
+        public BinaryToMovementReturn(MovementBaseType movementBaseType) {
+            this.messageType = MessageType.MOVEMENT;
             this.movementBaseType = movementBaseType;
             this.assetDto = null;
         }
 
-        public BinaryToMovementReturn(int messageType, AssetDTO assetDto) {
-            this.messageType = messageType;
+        public BinaryToMovementReturn(AssetDTO assetDto) {
+            this.messageType = MessageType.ASSET;
             this.movementBaseType = null;
             this.assetDto = assetDto;
         }
@@ -566,7 +576,7 @@ public class ProcessService {
             return assetDto;
         }
 
-        public int getMessageType() {
+        public MessageType getMessageType() {
             return messageType;
         }
     }

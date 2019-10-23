@@ -116,8 +116,6 @@ public class AisService {
         }
     }
 
-    // for test  6 this will be increased to 24  (1 per dygn)
-
     @Schedule(minute = "6", hour = "*", persistent = false )
     public void sendAssetUpdates() {
         if (!startUp.isEnabled()) {
@@ -125,6 +123,4 @@ public class AisService {
         }
         processService.sendAssetUpdateToExchange();
     }
-
-
 }
