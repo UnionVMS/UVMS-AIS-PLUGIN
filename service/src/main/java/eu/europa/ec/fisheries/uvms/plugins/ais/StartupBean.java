@@ -11,21 +11,17 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais;
 
-import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
 import eu.europa.ec.fisheries.schema.exchange.registry.v1.ExchangeRegistryMethod;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.CapabilityListType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.ServiceType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.SettingListType;
-import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstants;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.mapper.ServiceMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.producer.PluginMessageProducer;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.FileHandlerBean;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.ProcessService;
-import org.eclipse.microprofile.metrics.MetricUnits;
-import org.eclipse.microprofile.metrics.annotation.Gauge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,11 +29,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ejb.*;
 import javax.jms.JMSException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Singleton
 @Startup
@@ -61,9 +53,6 @@ public class StartupBean extends PluginDataHolder {
     private CapabilityListType capabilities;
     private SettingListType settingList;
     private ServiceType serviceType;
-
-    private Map<String, AssetDTO> downSampledAssetInfo = new HashMap<>();
-    private Set<String> knownFishingVessels = new HashSet<>();
 
     @PostConstruct
     public void startup() {
@@ -118,18 +107,6 @@ public class StartupBean extends PluginDataHolder {
                 timer.cancel();
             } else if (numberOfTriesExecuted >= MAX_NUMBER_OF_TRIES) {
                 LOG.info(getRegisterClassName() + " failed to register, maximum number of retries reached.");
-            }
-        } catch (Exception e) {
-            LOG.error(e.toString(), e);
-        }
-    }
-
-    @Schedule(minute = "*/15", hour = "*", persistent = false)
-    public void resend(Timer timer) {
-        try {
-            if (registered) {
-                List<MovementBaseType> list = getAndClearCachedMovementList();
-                processService.sendToExchange(list);
             }
         } catch (Exception e) {
             LOG.error(e.toString(), e);
@@ -216,18 +193,5 @@ public class StartupBean extends PluginDataHolder {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public Map<String, AssetDTO> getStoredAssetInfo(){
-        return downSampledAssetInfo;
-    }
-
-    public Set<String> getKnownFishingVessels(){
-        return knownFishingVessels;
-    }
-
-    @Gauge(unit = MetricUnits.NONE, name = "ais_knownfishingvessels_size", absolute = true)
-    public int getKnownFishingVesselsSize() {
-        return knownFishingVessels.size();
     }
 }

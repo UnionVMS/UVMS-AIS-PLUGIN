@@ -11,24 +11,40 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
-import eu.europa.ec.fisheries.uvms.ais.AISConnection;
-import eu.europa.ec.fisheries.uvms.ais.AISConnectionFactoryImpl;
-import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.ejb.*;
+import javax.ejb.DependsOn;
+import javax.ejb.EJB;
+import javax.ejb.Schedule;
+import javax.ejb.Singleton;
+import javax.ejb.Startup;
+import javax.ejb.Timer;
 import javax.inject.Inject;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.resource.ResourceException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Future;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Gauge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
+import eu.europa.ec.fisheries.uvms.ais.AISConnection;
+import eu.europa.ec.fisheries.uvms.ais.AISConnectionFactoryImpl;
+import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
+import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 
 @Singleton
 @Startup
@@ -44,8 +60,16 @@ public class AisService {
 
     @EJB
     ProcessService processService;
+    
+    @Inject
+    private ExchangeService exchangeService;
 
     List<Future<Long>> processes = new ArrayList<>();
+
+    private List<MovementBaseType> failedSendList = new ArrayList<>();
+    private Map<String, MovementBaseType> downSampledMovements = new HashMap<>();
+    private Map<String, AssetDTO> downSampledAssetInfo = new HashMap<>();
+    private Set<String> knownFishingVessels = new HashSet<>();
 
     @PostConstruct
     public void init() {
@@ -71,7 +95,7 @@ public class AisService {
     }
 
     @PreDestroy
-    public void destroy() {
+    public void destroy() throws InterruptedException, ExecutionException, TimeoutException {
         if (connection != null) {
             connection.close();
         }
@@ -81,13 +105,13 @@ public class AisService {
             if (process.isDone() || process.isCancelled()) {
                 processIterator.remove();
             } else {
+                process.get(15, TimeUnit.SECONDS);
                 process.cancel(true);
             }
         }
     }
 
-    // @Schedule(minute="*/1", hour="*", persistent=false)
-    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
+    @Schedule(second = "*/15", minute = "*", hour = "*", persistent = false)
     public void connectAndRetrive() {
         if (!startUp.isEnabled()) {
             return;
@@ -121,6 +145,67 @@ public class AisService {
         if (!startUp.isEnabled()) {
             return;
         }
-        processService.sendAssetUpdateToExchange();
+        exchangeService.sendAssetUpdates(downSampledAssetInfo.values());
+        downSampledAssetInfo.clear();
+    }
+
+//    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
+    @Schedule(minute = "*/1", hour = "*", persistent = false )
+    public void sendDownSampledMovements() {
+        if (downSampledMovements.isEmpty()) {
+            return;
+        }
+        List<MovementBaseType> movements;
+        synchronized (downSampledMovements) {
+            movements = new ArrayList<>(downSampledMovements.values());
+            downSampledMovements.clear();
+        }
+        exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
+    }
+
+    @Schedule(minute = "*/15", hour = "*", persistent = false)
+    public void resend(Timer timer) {
+        try {
+            if (startUp.isRegistered()) {
+                List<MovementBaseType> list = getAndClearFailedMovementList();
+                exchangeService.sendToExchange(list, startUp.getRegisterClassName());
+            }
+        } catch (Exception e) {
+            LOG.error(e.toString(), e);
+        }
+    }
+
+    public void addCachedMovement(MovementBaseType movementBaseType) {
+        synchronized (failedSendList) {
+            failedSendList.add(movementBaseType);
+        }
+    }
+
+    public List<MovementBaseType> getAndClearFailedMovementList() {
+        List<MovementBaseType> tmp = new ArrayList<>();
+        synchronized (failedSendList) {
+            tmp.addAll(failedSendList);
+            failedSendList.clear();
+        }
+        return tmp;
+    }
+
+    public Map<String, AssetDTO> getStoredAssetInfo(){
+        return downSampledAssetInfo;
+    }
+
+    public void addToDownSampledMovements(MovementBaseType movement) {
+        synchronized (downSampledMovements) {
+            downSampledMovements.put(movement.getMmsi(), movement);
+        }
+    }
+
+    public Set<String> getKnownFishingVessels(){
+        return knownFishingVessels;
+    }
+
+    @Gauge(unit = MetricUnits.NONE, name = "ais_knownfishingvessels_size", absolute = true)
+    public int getKnownFishingVesselsSize() {
+        return knownFishingVessels.size();
     }
 }
