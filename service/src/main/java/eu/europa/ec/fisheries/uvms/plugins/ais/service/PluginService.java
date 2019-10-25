@@ -40,44 +40,42 @@ public class PluginService {
     @EJB
     StartupBean startupBean;
 
-    final static Logger LOG = LoggerFactory.getLogger(PluginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PluginService.class);
 
     /**
-     * TODO implement
      *
      * @param report
      * @return
      */
     public AcknowledgeTypeType setReport(ReportType report) {
-        LOG.info(startupBean.getRegisterClassName() + ".report(" + report.getType().name() + ")");
-        LOG.debug("timestamp: " + report.getTimestamp());
+        LOG.info("{}.report({})", startupBean.getRegisterClassName(), report.getType().name());
+        LOG.debug("timestamp: {}", report.getTimestamp());
         MovementType movement = report.getMovement();
         if (movement != null && ReportTypeType.MOVEMENT.equals(report.getType())) {
             MovementPoint pos = movement.getPosition();
             if (pos != null) {
-                LOG.info("lon: " + pos.getLongitude());
-                LOG.info("lat: " + pos.getLatitude());
+                LOG.info("lon: {}", pos.getLongitude());
+                LOG.info("lat: {}", pos.getLatitude());
             }
         }
         return AcknowledgeTypeType.OK;
     }
 
     /**
-     * TODO implement
      *
      * @param command
      * @return
      */
     public AcknowledgeTypeType setCommand(CommandType command) {
-        LOG.info(startupBean.getRegisterClassName() + ".setCommand(" + command.getCommand().name() + ")");
-        LOG.debug("timestamp: " + command.getTimestamp());
+        LOG.info("{}.setCommand({})", startupBean.getRegisterClassName(), command.getCommand().name());
+        LOG.debug("timestamp: {}", command.getTimestamp());
         PollType poll = command.getPoll();
         EmailType email = command.getEmail();
         if (poll != null && CommandTypeType.POLL.equals(command.getCommand())) {
-            LOG.info("POLL: " + poll.getPollId());
+            LOG.info("POLL: {}", poll.getPollId());
         }
         if (email != null && CommandTypeType.EMAIL.equals(command.getCommand())) {
-            LOG.info("EMAIL: subject=" + email.getSubject());
+            LOG.info("EMAIL: subject={}",email.getSubject());
         }
         return AcknowledgeTypeType.OK;
     }
@@ -89,10 +87,10 @@ public class PluginService {
      * @return
      */
     public AcknowledgeTypeType setConfig(SettingListType settings) {
-        LOG.info(startupBean.getRegisterClassName() + ".setConfig()");
+        LOG.info("{}.setConfig()", startupBean.getRegisterClassName());
         try {
             for (KeyValueType values : settings.getSetting()) {
-                LOG.debug("Setting [ " + values.getKey() + " : " + values.getValue() + " ]");
+                LOG.debug("Setting [ {} : {} ]", values.getKey(), values.getValue());
                 startupBean.getSettings().put(values.getKey(), values.getValue());
             }
             return AcknowledgeTypeType.OK;
@@ -109,7 +107,7 @@ public class PluginService {
      * @return
      */
     public AcknowledgeTypeType start() {
-        LOG.info(startupBean.getRegisterClassName() + ".start()");
+        LOG.info("{}.start()", startupBean.getRegisterClassName());
         try {
             startupBean.setEnabled(Boolean.TRUE);
             return AcknowledgeTypeType.OK;
@@ -127,7 +125,7 @@ public class PluginService {
      * @return
      */
     public AcknowledgeTypeType stop() {
-        LOG.info(startupBean.getRegisterClassName() + ".stop()");
+        LOG.info("{}.stop()", startupBean.getRegisterClassName());
         try {
             startupBean.setEnabled(Boolean.FALSE);
             return AcknowledgeTypeType.OK;

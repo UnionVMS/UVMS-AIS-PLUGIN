@@ -41,7 +41,7 @@ public class Conversion {
     public static String getAnsi3ForCountryCode(String countryCode)  {
         CountryCode cc = countryCodeMap.get(countryCode);
         if(cc == null){
-            LOG.warn("Unknown country code: " + countryCode);
+            LOG.warn("Unknown country code: {}", countryCode);
             return "ERR";
         }
         return cc.getAnsi3();
@@ -57,7 +57,7 @@ public class Conversion {
         if (binary == null || binary.length() < 1) {
             return "";
         }
-        String parts[] = splitToNChar(binary, 6);
+        String[] parts = splitToNChar(binary, 6);
         int len = parts.length;
         if (len < 1) {
             return "";
@@ -461,8 +461,7 @@ public class Conversion {
     
 
     private static String removeTrailingSnabelA(String s) {
-        String ret = s.replace("@","").trim();
-        return ret;
+        return s.replace("@","").trim();
     }
 
 

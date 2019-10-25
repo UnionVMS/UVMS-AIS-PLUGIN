@@ -57,7 +57,6 @@ public class PluginAckEventBusListener implements MessageListener {
             if (request == null) {
                 handlePluginFault(textMessage);
             } else {
-                String responseMessage = null;
                 switch (request.getMethod()) {
                     case REGISTER_SERVICE:
                         RegisterServiceResponse registerResponse = JAXBMarshaller.unmarshallTextMessage(textMessage, RegisterServiceResponse.class);
@@ -68,11 +67,11 @@ public class PluginAckEventBusListener implements MessageListener {
                                 startupService.setRegistered(Boolean.TRUE);
                                 break;
                             case NOK:
-                                LOG.info("Register NOK: " + registerResponse.getAck().getMessage());
+                                LOG.info("Register NOK: {}", registerResponse.getAck().getMessage());
                                 startupService.setRegistered(Boolean.FALSE);
                                 break;
                             default:
-                                LOG.error("[ Type not supperted: ]" + request.getMethod());
+                                LOG.error("[ Type not supperted: {}]", request.getMethod());
                         }
                         break;
                     case UNREGISTER_SERVICE:
@@ -101,7 +100,7 @@ public class PluginAckEventBusListener implements MessageListener {
 
     private void handlePluginFault(TextMessage fault) {
         try {
-            LOG.error(startupService.getPluginResponseSubscriptionName() + " received fault : " + fault.getText() + " : ");
+            LOG.error("{} received fault : {}", startupService.getPluginResponseSubscriptionName(), fault.getText());
         } catch (JMSException e) {
             LOG.error("Unable to get text from textMessage in AIS");
         }

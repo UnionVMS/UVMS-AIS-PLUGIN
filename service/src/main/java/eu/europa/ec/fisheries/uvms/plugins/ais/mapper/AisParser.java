@@ -149,7 +149,6 @@ public class AisParser {
         ReceiveAssetInformationRequest req = new ReceiveAssetInformationRequest();
         req.setMethod(ExchangeModuleMethod.RECEIVE_ASSET_INFORMATION);
 
-        //movement.setAisMessageType(messageType);
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String vesselName = "";
         Integer shipType = null;
@@ -160,7 +159,6 @@ public class AisParser {
         // if partNumber == 1   the rest of the message is interpreted as a Part B
         // values of 2 and 3 is not allowed
         Integer partNumber = parseToNumeric("Part Number", binary, 38, 40);
-        //movement.setPartNumber(partNumber);
         if (partNumber.equals(0)) {
             vesselName = Conversion.getAsciiStringFromBinaryString(binary.substring(40, 160));
         } else if (partNumber.equals(1)) {

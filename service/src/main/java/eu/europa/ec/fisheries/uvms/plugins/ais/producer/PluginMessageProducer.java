@@ -15,7 +15,6 @@ import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstant
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
@@ -35,12 +34,7 @@ public class PluginMessageProducer {
     private ConnectionFactory connectionFactory;
 
 
-    final static Logger LOG = LoggerFactory.getLogger(PluginMessageProducer.class);
-
-
-    @PostConstruct
-    public void resourceLookup() {
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(PluginMessageProducer.class);
 
     public void sendResponseMessage(String text, TextMessage requestMessage) throws JMSException {
 

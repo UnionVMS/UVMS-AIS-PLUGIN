@@ -13,14 +13,13 @@ package eu.europa.ec.fisheries.uvms.plugins.ais;
 
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-/**
- **/
 public abstract class PluginDataHolder {
 
-    public final static String PLUGIN_PROPERTIES = "ais.properties";
-    public final static String PROPERTIES = "settings.properties";
-    public final static String CAPABILITIES = "capabilities.properties";
+    public static final String PLUGIN_PROPERTIES = "ais.properties";
+    public static final String PROPERTIES = "settings.properties";
+    public static final String CAPABILITIES_PROPERTIES = "capabilities.properties";
 
     private Properties aisApplicaitonProperties;
     private Properties aisProperties;
@@ -29,11 +28,11 @@ public abstract class PluginDataHolder {
     private final ConcurrentHashMap<String, String> settings = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> capabilities = new ConcurrentHashMap<>();
 
-    public ConcurrentHashMap<String, String> getSettings() {
+    public ConcurrentMap<String, String> getSettings() {
         return settings;
     }
 
-    public ConcurrentHashMap<String, String> getCapabilities() {
+    public ConcurrentMap<String, String> getCapabilities() {
         return capabilities;
     }
 

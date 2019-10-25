@@ -14,8 +14,7 @@ package eu.europa.ec.fisheries.uvms.plugins.ais.mapper;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,9 @@ import eu.europa.ec.fisheries.schema.exchange.service.v1.SettingType;
  **/
 public class ServiceMapper {
 
-    final static Logger LOG = LoggerFactory.getLogger(ServiceMapper.class);
+    private ServiceMapper() {}
+
+    private static final Logger LOG = LoggerFactory.getLogger(ServiceMapper.class);
 
     public static ServiceType getServiceType(String serviceClassName, String aisDisplayName, String description, PluginType aisType, String responseMessageName) {
 
@@ -52,7 +53,7 @@ public class ServiceMapper {
         return serviceType;
     }
 
-    public static SettingListType getSettingsListTypeFromMap(ConcurrentHashMap<String, String> settings) {
+    public static SettingListType getSettingsListTypeFromMap(ConcurrentMap<String, String> settings) {
         SettingListType settingListType = new SettingListType();
         Iterator<Map.Entry<String, String>> itr = settings.entrySet().iterator();
         while (itr.hasNext()) {
@@ -65,7 +66,7 @@ public class ServiceMapper {
         return settingListType;
     }
 
-    public static CapabilityListType getCapabilitiesListTypeFromMap(ConcurrentHashMap<String, String> capabilities) {
+    public static CapabilityListType getCapabilitiesListTypeFromMap(ConcurrentMap<String, String> capabilities) {
         CapabilityListType capabilityListType = new CapabilityListType();
         Iterator<Map.Entry<String, String>> itr = capabilities.entrySet().iterator();
         while (itr.hasNext()) {
@@ -84,7 +85,7 @@ public class ServiceMapper {
         return capabilityListType;
     }
 
-    public static void mapToMapFromProperties(ConcurrentHashMap<String, String> map, Properties props, String registerClassName) {
+    public static void mapToMapFromProperties(ConcurrentMap<String, String> map, Properties props, String registerClassName) {
         for (Object col : props.keySet()) {
             if (col.getClass().isAssignableFrom(String.class)) {
                 String keyString = (String) col;
