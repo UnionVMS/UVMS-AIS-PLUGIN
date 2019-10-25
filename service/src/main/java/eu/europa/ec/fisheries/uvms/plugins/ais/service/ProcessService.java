@@ -63,7 +63,8 @@ public class ProcessService {
                 addFishingVessels(assetDto);
             }
         }
-        exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
+        List<MovementBaseType> failedMessages = exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
+        failedMessages.stream().forEach(aisService::addCachedMovement);
         LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
         return new AsyncResult<>(System.currentTimeMillis() - start);
     }

@@ -12,8 +12,10 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import javax.annotation.Resource;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -54,9 +56,6 @@ public class ExchangeService {
     private Queue errorQueue;
 
     @Inject
-    private AisService aisService;
-    
-    @Inject
     @Metric(name = "ais_incoming", absolute = true)
     private Counter aisIncoming;
     
@@ -91,9 +90,9 @@ public class ExchangeService {
         return ok;
     }
 
-
-    public void sendToExchange(Collection<MovementBaseType> movements, String pluginName) {
+    public List<MovementBaseType> sendToExchange(Collection<MovementBaseType> movements, String pluginName) {
         LOG.info("Sending {} positions to exchange", movements.size());
+        List<MovementBaseType> failedMovements = new ArrayList<>();
         try (Connection connection = connectionFactory.createConnection();
                 Session session = connection.createSession(false, 1);
                 MessageProducer producer = session.createProducer(exchangeQueue)) {
@@ -114,7 +113,7 @@ public class ExchangeService {
                     sendToErrorQueueParsingError(movement.toString());
                 } catch (JMSException e) {
                     // save it and try again in a scheduled thread
-                    aisService.addCachedMovement(movement);
+                    failedMovements.add(movement);
                 } catch (Exception e) {
                     LOG.info("//NOP: {}", e.getLocalizedMessage());
                 }
@@ -122,6 +121,7 @@ public class ExchangeService {
         } catch (JMSException e) {
             LOG.error("couldn't send movement");
         }
+        return failedMovements;
     }
     
     public void sendToErrorQueueParsingError(String movement) {

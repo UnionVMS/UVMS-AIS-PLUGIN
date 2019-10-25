@@ -160,7 +160,8 @@ public class AisService {
             movements = new ArrayList<>(downSampledMovements.values());
             downSampledMovements.clear();
         }
-        exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
+        List<MovementBaseType> failedMessages = exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
+        failedMessages.stream().forEach(this::addCachedMovement);
     }
 
     @Schedule(minute = "*/15", hour = "*", persistent = false)
@@ -168,7 +169,8 @@ public class AisService {
         try {
             if (startUp.isRegistered()) {
                 List<MovementBaseType> list = getAndClearFailedMovementList();
-                exchangeService.sendToExchange(list, startUp.getRegisterClassName());
+                List<MovementBaseType> failedMessages = exchangeService.sendToExchange(list, startUp.getRegisterClassName());
+                failedMessages.stream().forEach(this::addCachedMovement);
             }
         } catch (Exception e) {
             LOG.error(e.toString(), e);
