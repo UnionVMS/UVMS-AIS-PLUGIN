@@ -201,6 +201,10 @@ public class AisService {
         }
     }
 
+    protected Map<String, MovementBaseType> getDownSampledMovements() {
+        return downSampledMovements;
+    }
+
     public Set<String> getKnownFishingVessels(){
         return knownFishingVessels;
     }
