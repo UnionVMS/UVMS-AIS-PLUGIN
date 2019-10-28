@@ -190,9 +190,12 @@ public class AisParser {
     }
 
     private static Double parseCoordinate(String data, int stringStart, int stringEnd) {
-
         try {
-            Integer i = Integer.parseInt(data.substring(stringStart, stringEnd), 2);
+            String byteString = data.substring(stringStart, stringEnd);
+            Long i = Long.parseLong(byteString, 2);
+            if (byteString.charAt(0) == '1') {
+                i -= (1L << byteString.length());
+            }
             return (i.doubleValue() / 10000 / 60);
         }catch(NumberFormatException nfe){
             return null;

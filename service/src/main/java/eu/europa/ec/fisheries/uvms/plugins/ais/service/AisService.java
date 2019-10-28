@@ -148,8 +148,8 @@ public class AisService {
         downSampledAssetInfo.clear();
     }
 
-//    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
-    @Schedule(minute = "*/1", hour = "*", persistent = false )
+    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
+//    @Schedule(minute = "*/1", hour = "*", persistent = false )
     public void sendDownSampledMovements() {
         if (downSampledMovements.isEmpty()) {
             return;
