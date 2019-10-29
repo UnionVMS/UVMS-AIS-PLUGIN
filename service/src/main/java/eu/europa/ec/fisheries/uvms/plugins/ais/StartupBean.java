@@ -11,13 +11,11 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais;
 
-import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.schema.exchange.plugin.types.v1.PluginType;
 import eu.europa.ec.fisheries.schema.exchange.registry.v1.ExchangeRegistryMethod;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.CapabilityListType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.ServiceType;
 import eu.europa.ec.fisheries.schema.exchange.service.v1.SettingListType;
-import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.exchange.model.constant.ExchangeModelConstants;
 import eu.europa.ec.fisheries.uvms.exchange.model.mapper.ExchangeModuleRequestMapper;
 import eu.europa.ec.fisheries.uvms.plugins.ais.mapper.ServiceMapper;
@@ -31,9 +29,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ejb.*;
 import javax.jms.JMSException;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
 import java.util.Map;
 
 @Singleton
@@ -41,9 +36,9 @@ import java.util.Map;
 @DependsOn({"PluginMessageProducer", "FileHandlerBean", "PluginAckEventBusListener"})
 public class StartupBean extends PluginDataHolder {
 
-    final static Logger LOG = LoggerFactory.getLogger(StartupBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StartupBean.class);
 
-    private final static int MAX_NUMBER_OF_TRIES = 10;
+    private static final int MAX_NUMBER_OF_TRIES = 10;
     @EJB
     PluginMessageProducer messageProducer;
     @EJB
@@ -59,8 +54,6 @@ public class StartupBean extends PluginDataHolder {
     private SettingListType settingList;
     private ServiceType serviceType;
 
-    private Map<String, AssetDTO> downSampledAssetInfo = new Hashtable<>();
-
     @PostConstruct
     public void startup() {
 
@@ -70,7 +63,7 @@ public class StartupBean extends PluginDataHolder {
 
         //Theese can be loaded in any order
         super.setPluginProperties(fileHandler.getPropertiesFromFile(PluginDataHolder.PROPERTIES));
-        super.setPluginCapabilities(fileHandler.getPropertiesFromFile(PluginDataHolder.CAPABILITIES));
+        super.setPluginCapabilities(fileHandler.getPropertiesFromFile(PluginDataHolder.CAPABILITIES_PROPERTIES));
 
         ServiceMapper.mapToMapFromProperties(super.getSettings(), super.getPluginProperties(), getRegisterClassName());
         ServiceMapper.mapToMapFromProperties(super.getCapabilities(), super.getPluginCapabilities(), null);
@@ -114,20 +107,6 @@ public class StartupBean extends PluginDataHolder {
                 timer.cancel();
             } else if (numberOfTriesExecuted >= MAX_NUMBER_OF_TRIES) {
                 LOG.info(getRegisterClassName() + " failed to register, maximum number of retries reached.");
-            }
-        } catch (Exception e) {
-            LOG.error(e.toString(), e);
-        }
-    }
-
-    @Schedule(minute = "*/15", hour = "*", persistent = false)
-    public void resend(Timer timer) {
-        try {
-            if (registered) {
-                List<MovementBaseType> list = getAndClearCachedMovementList();
-                final Map<String, MovementBaseType> theMap = new HashMap<>();
-                list.forEach(e -> theMap.put(e.getMmsi(), e));
-                processService.sendToExchange(theMap);
             }
         } catch (Exception e) {
             LOG.error(e.toString(), e);
@@ -215,12 +194,4 @@ public class StartupBean extends PluginDataHolder {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-
-    public Map<String, AssetDTO> getStoredAssetInfo(){
-        return downSampledAssetInfo;
-    }
-
-
-
-
 }

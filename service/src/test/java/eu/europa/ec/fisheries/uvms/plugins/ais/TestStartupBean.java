@@ -60,7 +60,7 @@ public class TestStartupBean {
 
         Mockito.when(fileHandler.getPropertiesFromFile(PluginDataHolder.PLUGIN_PROPERTIES)).thenReturn(pluginProperties);
         Mockito.when(fileHandler.getPropertiesFromFile(PluginDataHolder.PROPERTIES)).thenReturn(new Properties());
-        Mockito.when(fileHandler.getPropertiesFromFile(PluginDataHolder.CAPABILITIES)).thenReturn(capabilities);
+        Mockito.when(fileHandler.getPropertiesFromFile(PluginDataHolder.CAPABILITIES_PROPERTIES)).thenReturn(capabilities);
     }
 
     @Test

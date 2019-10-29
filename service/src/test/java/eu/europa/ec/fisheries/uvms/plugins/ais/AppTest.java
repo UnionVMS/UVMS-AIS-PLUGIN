@@ -45,25 +45,24 @@ public class AppTest
      */
     public void testType5_1() throws Exception {
 
-        Conversion conversion = new Conversion();
         String aisMsg = "5CpuqR029m2U<pLP00084i@T<40000000000000N1HN814lf0<1i6CR@@PC52@ii6CR@@00";
         int lenAis = aisMsg.length();
         String binary = "";
         for(int i = 0 ; i < lenAis ; i++){
-            String binChar = conversion.getBinaryForSymbol(aisMsg.charAt(i));
+            String binChar = Conversion.getBinaryForSymbol(aisMsg.charAt(i));
             binary += binChar;
         }
-        String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
+        String vesselName = Conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
         Assert.assertEquals("BALTICA",vesselName);
 
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String cc = mmsi.substring(0,3);
-        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
+        String ansi3 = Conversion.getAnsi3ForCountryCode(cc);
         Assert.assertEquals("POL",ansi3);
 
 
-        String ircs =  conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
-        String shipType = conversion.getAsciiStringFromBinaryString(binary.substring(232, 240));
+        String ircs =  Conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
+        String shipType = Conversion.getAsciiStringFromBinaryString(binary.substring(232, 240));
 
         Assert.assertEquals("SNGH",ircs);
         Assert.assertEquals("G",shipType);
@@ -72,70 +71,59 @@ public class AppTest
 
     public void testType5_2() throws Exception {
 
-        Conversion conversion = new Conversion();
         String aisMsg = "53oTbV029MP4haDt000`tPp0000000000000000l1@G556eA0<Tk0AiCP00000000000000";
         int lenAis = aisMsg.length();
         String binary = "";
         for(int i = 0 ; i < lenAis ; i++){
-            String binChar = conversion.getBinaryForSymbol(aisMsg.charAt(i));
+            String binChar = Conversion.getBinaryForSymbol(aisMsg.charAt(i));
             binary += binChar;
         }
-        String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
+        String vesselName = Conversion.getAsciiStringFromBinaryString(binary.substring(112, 232));
         Assert.assertEquals("JOHN",vesselName);
 
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
         String cc = mmsi.substring(0,3);
-        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
+        String ansi3 = Conversion.getAnsi3ForCountryCode(cc);
         Assert.assertEquals("NOR",ansi3);
 
-        String ircs =  conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
-        String shipType = conversion.getAsciiStringFromBinaryString(binary.substring(232, 240));
+        String ircs =  Conversion.getAsciiStringFromBinaryString(binary.substring(70, 112));
+        String shipType = Conversion.getAsciiStringFromBinaryString(binary.substring(232, 240));
 
         Assert.assertEquals("LJUO",ircs);
         Assert.assertEquals("M",shipType);
 
-
-
     }
 
     public void testType5_3() {
-        Conversion conversion = new Conversion();
-        String vesselName = conversion.getAsciiStringFromBinaryString("");
+        String vesselName = Conversion.getAsciiStringFromBinaryString("");
         Assert.assertEquals("",vesselName);
     }
 
 
     public void testType24() {
 
-        Conversion conversion = new Conversion();
-
         String aisMsg = "H3uHE`058du=DpA>0L5=@P4lp00";
         int lenAis = aisMsg.length();
         String binary = "";
         for(int i = 0 ; i < lenAis ; i++){
-            String binChar = conversion.getBinaryForSymbol(aisMsg.charAt(i));
+            String binChar = Conversion.getBinaryForSymbol(aisMsg.charAt(i));
             binary += binChar;
         }
-        String vesselName = conversion.getAsciiStringFromBinaryString(binary.substring(40, 160));
+        String vesselName = Conversion.getAsciiStringFromBinaryString(binary.substring(40, 160));
         Assert.assertEquals("ARKOSUNDS GASTHAMN",vesselName);
 
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
 
         String cc = mmsi.substring(0,3);
-        String ansi3 = conversion.getAnsi3ForCountryCode(cc);
+        String ansi3 = Conversion.getAnsi3ForCountryCode(cc);
         Assert.assertEquals("SWE",ansi3);
 
-        String ircs =  conversion.getAsciiStringFromBinaryString(binary.substring(90,132));
-        String shipType = conversion.getAsciiStringFromBinaryString(binary.substring(40,48));
+        String ircs =  Conversion.getAsciiStringFromBinaryString(binary.substring(90,132));
+        String shipType = Conversion.getAsciiStringFromBinaryString(binary.substring(40,48));
 
 
         //Assert.assertEquals("LJUO",ircs);
         Assert.assertEquals("A",shipType);
 
-
-
     }
-
-
-
 }
