@@ -11,10 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
@@ -30,7 +28,7 @@ public class ProcessServiceTest {
     private StartupBean startUp;
 
     @Mock
-    private AisService aisService;
+    private DownsamplingService downsamplingService;
     
     @Mock
     private ExchangeService exchangeService;
@@ -40,10 +38,9 @@ public class ProcessServiceTest {
     
     @Test
     public void aisType1Test() {
-        processService.processMessages(Arrays.asList(getAisType1Message()));
-        ArgumentCaptor<MovementBaseType> movementCaptor = ArgumentCaptor.forClass(MovementBaseType.class);
-        Mockito.verify(aisService).addToDownSampledMovements(movementCaptor.capture());
-        MovementBaseType movement = movementCaptor.getValue();
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisType1Message()), new HashSet<>());
+        Map<String, MovementBaseType> movements = result.getDownsampledMovements();
+        MovementBaseType movement = movements.get("371798000");
         assertThat(movement.getMmsi(), is("371798000"));
         assertThat(movement.getFlagState(), is("PAN"));
         assertThat(movement.getPosition().getLatitude(), is(48.38163333333333));
@@ -56,10 +53,9 @@ public class ProcessServiceTest {
     
     @Test
     public void aisType2Test() {
-        processService.processMessages(Arrays.asList(getAisType2Message()));
-        ArgumentCaptor<MovementBaseType> movementCaptor = ArgumentCaptor.forClass(MovementBaseType.class);
-        Mockito.verify(aisService).addToDownSampledMovements(movementCaptor.capture());
-        MovementBaseType movement = movementCaptor.getValue();
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisType2Message()), new HashSet<>());
+        Map<String, MovementBaseType> movements = result.getDownsampledMovements();
+        MovementBaseType movement = movements.get("356302000");
         assertThat(movement.getMmsi(), is("356302000"));
         assertThat(movement.getFlagState(), is("PAN"));
         assertThat(movement.getPosition().getLatitude(), is(40.39235833333333));
@@ -72,10 +68,9 @@ public class ProcessServiceTest {
     
     @Test
     public void aisType3Test() {
-        processService.processMessages(Arrays.asList(getAisType3Message()));
-        ArgumentCaptor<MovementBaseType> movementCaptor = ArgumentCaptor.forClass(MovementBaseType.class);
-        Mockito.verify(aisService).addToDownSampledMovements(movementCaptor.capture());
-        MovementBaseType movement = movementCaptor.getValue();
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisType3Message()), new HashSet<>());
+        Map<String, MovementBaseType> movements = result.getDownsampledMovements();
+        MovementBaseType movement = movements.get("563808000");
         assertThat(movement.getMmsi(), is("563808000"));
         assertThat(movement.getFlagState(), is("SGP"));
         assertThat(movement.getPosition().getLatitude(), is(36.91));
@@ -88,10 +83,9 @@ public class ProcessServiceTest {
     
     @Test
     public void positionTest() {
-        processService.processMessages(Arrays.asList(getAisPositionMessage()));
-        ArgumentCaptor<MovementBaseType> movementCaptor = ArgumentCaptor.forClass(MovementBaseType.class);
-        Mockito.verify(aisService).addToDownSampledMovements(movementCaptor.capture());
-        MovementBaseType movement = movementCaptor.getValue();
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisPositionMessage()), new HashSet<>());
+        Map<String, MovementBaseType> movements = result.getDownsampledMovements();
+        MovementBaseType movement = movements.get("219024194");
         assertThat(movement.getMmsi(), is("219024194"));
         assertThat(movement.getFlagState(), is("DNK"));
         assertThat(movement.getPosition().getLatitude(), is(57.490381666666664));
@@ -100,10 +94,9 @@ public class ProcessServiceTest {
     
     @Test
     public void positionType18Test() {
-        processService.processMessages(Arrays.asList(getAisType18Message()));
-        ArgumentCaptor<MovementBaseType> movementCaptor = ArgumentCaptor.forClass(MovementBaseType.class);
-        Mockito.verify(aisService).addToDownSampledMovements(movementCaptor.capture());
-        MovementBaseType movement = movementCaptor.getValue();
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisType18Message()), new HashSet<>());
+        Map<String, MovementBaseType> movements = result.getDownsampledMovements();
+        MovementBaseType movement = movements.get("338087471");
         assertThat(movement.getMmsi(), is("338087471"));
         assertThat(movement.getFlagState(), is("USA"));
         assertThat(movement.getPosition().getLatitude(), is(40.68454));
@@ -112,9 +105,8 @@ public class ProcessServiceTest {
     
     @Test
     public void aisType5Test() {
-        Map<String, AssetDTO> assetMap = new HashMap<>();
-        when(aisService.getStoredAssetInfo()).thenReturn(assetMap);
-        processService.processMessages(Arrays.asList(getAisType5Message()));
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisType5Message()), new HashSet<>());
+        Map<String, AssetDTO> assetMap = result.getDownsampledAssets();
         assertThat(assetMap.size(), is(1));
         AssetDTO asset = assetMap.get("351759000");
         assertThat(asset.getFlagStateCode(), is("PAN"));
@@ -126,8 +118,7 @@ public class ProcessServiceTest {
     public void fishingVesselTest() {
         String knownMmsi = "261061000";
         Set<String> fishingVessels = new HashSet<>();
-        when(aisService.getKnownFishingVessels()).thenReturn(fishingVessels);
-        processService.processMessages(Arrays.asList(getAisType5FishingVessel()));
+        processService.processMessages(Arrays.asList(getAisType5FishingVessel()), fishingVessels);
         assertThat(fishingVessels.size(), is(1));
         String assetMmsi = fishingVessels.iterator().next();
         assertThat(assetMmsi, is(knownMmsi));
@@ -135,9 +126,8 @@ public class ProcessServiceTest {
     
     @Test
     public void aisType24PartATest() {
-        Map<String, AssetDTO> assetMap = new HashMap<>();
-        when(aisService.getStoredAssetInfo()).thenReturn(assetMap);
-        processService.processMessages(Arrays.asList(getAisType24PartAMessage()));
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisType24PartAMessage()), new HashSet<>());
+        Map<String, AssetDTO> assetMap = result.getDownsampledAssets();
         assertThat(assetMap.size(), is(1));
         AssetDTO asset = assetMap.get("271041815");
         assertThat(asset.getName(), is("PROGUY"));
@@ -145,9 +135,8 @@ public class ProcessServiceTest {
     
     @Test
     public void aisType24PartBTest() {
-        Map<String, AssetDTO> assetMap = new HashMap<>();
-        when(aisService.getStoredAssetInfo()).thenReturn(assetMap);
-        processService.processMessages(Arrays.asList(getAisType24PartBMessage()));
+        ProcessResult result = processService.processMessages(Arrays.asList(getAisType24PartBMessage()), new HashSet<>());
+        Map<String, AssetDTO> assetMap = result.getDownsampledAssets();
         assertThat(assetMap.size(), is(1));
         AssetDTO asset = assetMap.get("271041815");
         assertThat(asset.getIrcs(), is("TC6163"));

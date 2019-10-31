@@ -56,6 +56,9 @@ public class ExchangeService {
     private Queue errorQueue;
 
     @Inject
+    private AisService aisService;
+    
+    @Inject
     @Metric(name = "ais_incoming", absolute = true)
     private Counter aisIncoming;
     
@@ -90,9 +93,8 @@ public class ExchangeService {
         return ok;
     }
 
-    public List<MovementBaseType> sendToExchange(Collection<MovementBaseType> movements, String pluginName) {
+    public void sendToExchange(Collection<MovementBaseType> movements, String pluginName) {
         LOG.info("Sending {} positions to exchange", movements.size());
-        List<MovementBaseType> failedMovements = new ArrayList<>();
         try (Connection connection = connectionFactory.createConnection();
                 Session session = connection.createSession(false, 1);
                 MessageProducer producer = session.createProducer(exchangeQueue)) {
@@ -113,7 +115,7 @@ public class ExchangeService {
                     sendToErrorQueueParsingError(movement.toString());
                 } catch (JMSException e) {
                     // save it and try again in a scheduled thread
-                    failedMovements.add(movement);
+                    aisService.addCachedMovement(movement);
                 } catch (Exception e) {
                     LOG.info("//NOP: {}", e.getLocalizedMessage());
                 }
@@ -121,7 +123,6 @@ public class ExchangeService {
         } catch (JMSException e) {
             LOG.error("couldn't send movement");
         }
-        return failedMovements;
     }
     
     public void sendToErrorQueueParsingError(String movement) {

@@ -12,10 +12,10 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Future;
-import javax.ejb.AsyncResult;
-import javax.ejb.Asynchronous;
+import java.util.Map;
+import java.util.Set;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -32,18 +32,16 @@ public class ProcessService {
 
     @Inject
     private StartupBean startUp;
-
-    @Inject
-    private AisService aisService;
     
     @Inject
     private ExchangeService exchangeService;
 
-    @Asynchronous
-    public Future<Long> processMessages(List<String> sentences) {
+    public ProcessResult processMessages(List<String> sentences, Set<String> knownFishingVessels) {
         long start = System.currentTimeMillis();
 
         List<MovementBaseType> movements = new ArrayList<>(); 
+        Map<String, MovementBaseType> downsampledMovements = new HashMap<>();
+        Map<String, AssetDTO> downsampledAssets = new HashMap<>();
         // collect
         for (String sentence : sentences) {
             String binary = symbolToBinary(sentence);
@@ -51,35 +49,30 @@ public class ProcessService {
             if (retVal != null && retVal.getMessageType().equals(MessageType.MOVEMENT)) {
                 MovementBaseType movement = retVal.getMovementBaseType();
                 if (movement != null) {
-                    if (isFishingVessel(movement.getMmsi())) {
+                    if (knownFishingVessels.contains(movement.getMmsi())) {
                         movements.add(movement);
                     } else {
-                        aisService.addToDownSampledMovements(movement);
+                        downsampledMovements.put(movement.getMmsi(), movement);
                     }
                 }
             } else if (retVal != null && retVal.getMessageType().equals(MessageType.ASSET)) {
                 AssetDTO assetDto  = retVal.getAssetDTO();
-                aisService.getStoredAssetInfo().put(assetDto.getMmsi(), assetDto);
-                addFishingVessels(assetDto);
+                downsampledAssets.put(assetDto.getMmsi(), assetDto);
+                addFishingVessels(assetDto, knownFishingVessels);
             }
         }
-        List<MovementBaseType> failedMessages = exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
-        failedMessages.stream().forEach(aisService::addCachedMovement);
+        exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
         LOG.info("Processing time: {} for {} sentences", (System.currentTimeMillis() - start), sentences.size());
-        return new AsyncResult<>(System.currentTimeMillis() - start);
+        return new ProcessResult(downsampledMovements, downsampledAssets);
     }
 
-    private void addFishingVessels(AssetDTO asset) {
+    private void addFishingVessels(AssetDTO asset, Set<String> knownFishingVessels) {
         if (asset.getVesselType() != null && asset.getVesselType().equals("Fishing")) {
-            aisService.getKnownFishingVessels().add(asset.getMmsi());
-        } else if (aisService.getKnownFishingVessels().contains(asset.getMmsi()) && asset.getVesselType() != null) {
+            knownFishingVessels.add(asset.getMmsi());
+        } else if (knownFishingVessels.contains(asset.getMmsi()) && asset.getVesselType() != null) {
             LOG.debug("Removing mmsi {} as fishing vessel, is now {}", asset.getMmsi(), asset.getVesselType());
-            aisService.getKnownFishingVessels().remove(asset.getMmsi());
+            knownFishingVessels.remove(asset.getMmsi());
         }
-    }
-
-    private boolean isFishingVessel(String mmsi) {
-        return aisService.getKnownFishingVessels().contains(mmsi);
     }
 
     private String symbolToBinary(String symbolString) {
