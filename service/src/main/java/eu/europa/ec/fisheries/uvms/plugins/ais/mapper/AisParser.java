@@ -33,6 +33,78 @@ public class AisParser {
     
     private AisParser() {}
     
+    public enum AisType {
+        TYPE1(Type.POSITION), 
+        TYPE2(Type.POSITION), 
+        TYPE3(Type.POSITION), 
+        TYPE5(Type.STATIC), 
+        TYPE18(Type.POSITION), 
+        TYPE24(Type.STATIC),
+        UNKNOWN(null);
+        
+        private Type type;
+        
+        private AisType(Type type) {
+            this.type = type;
+        }
+        
+        public boolean isPositionReport() {
+            return Type.POSITION.equals(type);
+        }
+        
+        public boolean isStaticReport() {
+            return Type.STATIC.equals(type);
+        }
+        
+        private enum Type {
+            POSITION, STATIC;
+        }
+    }
+    
+    public static AisType parseAisType(String binary) {
+        int messageType = Integer.parseInt(binary.substring(0, 6), 2);
+        switch (messageType) {
+            case 1:
+                return AisType.TYPE1;
+            case 2:
+                return AisType.TYPE2;
+            case 3:
+                return AisType.TYPE3;
+            case 5:
+                return AisType.TYPE5;
+            case 18:
+                return AisType.TYPE18;
+            case 24:
+                return AisType.TYPE24;
+            default:
+                return AisType.UNKNOWN;
+        }
+    }
+    
+    public static MovementBaseType parsePositionReport(String binary, AisType aisType) {
+        switch (aisType) {
+            case TYPE1:
+            case TYPE2:
+            case TYPE3:
+                return parseReportType123(binary);
+            case TYPE18:
+                return parseReportType18(binary);
+            default:
+                return null;
+        }
+    }
+    
+    public static AssetDTO parseStaticReport(String binary, AisType aisType) {
+        switch (aisType) {
+            case TYPE5:
+                return parseReportType5(binary);
+            case TYPE24:
+                return parseReportType24(binary);
+            default:
+                return null;
+        }
+    }
+    
     public static MovementBaseType parseReportType123(String binary) {
         MovementBaseType movement = new MovementBaseType();
         Integer mmsiNumeric = Integer.MIN_VALUE;

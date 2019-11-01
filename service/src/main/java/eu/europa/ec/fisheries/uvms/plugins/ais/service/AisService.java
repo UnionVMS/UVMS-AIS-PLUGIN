@@ -12,24 +12,24 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
 package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import javax.ejb.DependsOn;
 import javax.ejb.EJB;
 import javax.ejb.Schedule;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.ejb.Timer;
+import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.uvms.ais.AISConnection;
 import eu.europa.ec.fisheries.uvms.ais.AISConnectionFactoryImpl;
-import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 
 @Singleton
@@ -61,13 +60,17 @@ public class AisService {
     ProcessService processService;
     
     @Inject
+    private DownsamplingService downsamplingService;
+    
+    @Inject
     private ExchangeService exchangeService;
+    
+    @Resource
+    private ManagedExecutorService executorService;
 
-    List<Future<Long>> processes = new ArrayList<>();
+    private List<CompletableFuture<Void>> processes = new ArrayList<>();
 
     private List<MovementBaseType> failedSendList = new ArrayList<>();
-    private Map<String, MovementBaseType> downSampledMovements = new HashMap<>();
-    private Map<String, AssetDTO> downSampledAssetInfo = new HashMap<>();
     private Set<String> knownFishingVessels = new HashSet<>();
 
     @PostConstruct
@@ -94,17 +97,21 @@ public class AisService {
     }
 
     @PreDestroy
-    public void destroy() throws InterruptedException, ExecutionException, TimeoutException {
+    public void destroy() {
         if (connection != null) {
             connection.close();
         }
-        Iterator<Future<Long>> processIterator = processes.iterator();
+        Iterator<CompletableFuture<Void>> processIterator = processes.iterator();
         while (processIterator.hasNext()) {
-            Future<Long> process = processIterator.next();
+            CompletableFuture<Void> process = processIterator.next();
             if (process.isDone() || process.isCancelled()) {
                 processIterator.remove();
             } else {
-                process.get(15, TimeUnit.SECONDS);
+                try {
+                    process.get(15, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    LOG.error("Error during destroy: {}", e.getMessage());
+                }
                 process.cancel(true);
             }
         }
@@ -125,42 +132,23 @@ public class AisService {
         }
 
         if (connection != null && connection.isOpen()) {
-            Iterator<Future<Long>> processIterator = processes.iterator();
+            Iterator<CompletableFuture<Void>> processIterator = processes.iterator();
             while (processIterator.hasNext()) {
-                Future<Long> process = processIterator.next();
+                CompletableFuture<Void> process = processIterator.next();
                 if (process.isDone() || process.isCancelled()) {
                     processIterator.remove();
                 }
             }
             List<String> sentences = connection.getSentences();
-            Future<Long> process = processService.processMessages(sentences);
+            CompletableFuture<Void> process = CompletableFuture.supplyAsync(() -> processService.processMessages(sentences, knownFishingVessels), executorService)
+                    .thenAccept(result -> {
+                        downsamplingService.getDownSampledMovements().putAll(result.getDownsampledMovements());
+                        downsamplingService.getStoredAssetInfo().putAll(result.getDownsampledAssets());
+                        }
+                    );
             processes.add(process);
             LOG.info("Got {} sentences from AIS RA. Currently running {} parallel threads", sentences.size(), processes.size());
         }
-    }
-
-    @Schedule(minute = "6", hour = "*", persistent = false )
-    public void sendAssetUpdates() {
-        if (!startUp.isEnabled()) {
-            return;
-        }
-        exchangeService.sendAssetUpdates(downSampledAssetInfo.values());
-        downSampledAssetInfo.clear();
-    }
-
-    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
-//    @Schedule(minute = "*/1", hour = "*", persistent = false )
-    public void sendDownSampledMovements() {
-        if (downSampledMovements.isEmpty()) {
-            return;
-        }
-        List<MovementBaseType> movements;
-        synchronized (downSampledMovements) {
-            movements = new ArrayList<>(downSampledMovements.values());
-            downSampledMovements.clear();
-        }
-        List<MovementBaseType> failedMessages = exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
-        failedMessages.stream().forEach(this::addCachedMovement);
     }
 
     @Schedule(minute = "*/15", hour = "*", persistent = false)
@@ -168,8 +156,7 @@ public class AisService {
         try {
             if (startUp.isRegistered()) {
                 List<MovementBaseType> list = getAndClearFailedMovementList();
-                List<MovementBaseType> failedMessages = exchangeService.sendToExchange(list, startUp.getRegisterClassName());
-                failedMessages.stream().forEach(this::addCachedMovement);
+                exchangeService.sendToExchange(list, startUp.getRegisterClassName());
             }
         } catch (Exception e) {
             LOG.error(e.toString(), e);
@@ -189,20 +176,6 @@ public class AisService {
             failedSendList.clear();
         }
         return tmp;
-    }
-
-    public Map<String, AssetDTO> getStoredAssetInfo(){
-        return downSampledAssetInfo;
-    }
-
-    public void addToDownSampledMovements(MovementBaseType movement) {
-        synchronized (downSampledMovements) {
-            downSampledMovements.put(movement.getMmsi(), movement);
-        }
-    }
-
-    protected Map<String, MovementBaseType> getDownSampledMovements() {
-        return downSampledMovements;
     }
 
     public Set<String> getKnownFishingVessels(){
