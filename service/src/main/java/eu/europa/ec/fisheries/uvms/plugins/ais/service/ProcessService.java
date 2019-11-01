@@ -24,6 +24,7 @@ import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 import eu.europa.ec.fisheries.uvms.plugins.ais.mapper.AisParser;
+import eu.europa.ec.fisheries.uvms.plugins.ais.mapper.AisParser.AisType;
 
 @Stateless
 public class ProcessService {
@@ -39,26 +40,31 @@ public class ProcessService {
     public ProcessResult processMessages(List<String> sentences, Set<String> knownFishingVessels) {
         long start = System.currentTimeMillis();
 
-        List<MovementBaseType> movements = new ArrayList<>(); 
+        List<MovementBaseType> movements = new ArrayList<>();
         Map<String, MovementBaseType> downsampledMovements = new HashMap<>();
         Map<String, AssetDTO> downsampledAssets = new HashMap<>();
         // collect
         for (String sentence : sentences) {
-            String binary = symbolToBinary(sentence);
-            BinaryToMovementReturn retVal = binaryToMovement(binary, sentence);
-            if (retVal != null && retVal.getMessageType().equals(MessageType.MOVEMENT)) {
-                MovementBaseType movement = retVal.getMovementBaseType();
-                if (movement != null) {
-                    if (knownFishingVessels.contains(movement.getMmsi())) {
-                        movements.add(movement);
-                    } else {
-                        downsampledMovements.put(movement.getMmsi(), movement);
+            try {
+                String binary = symbolToBinary(sentence);
+                AisType aisType = AisParser.parseAisType(binary);
+                if (aisType.isPositionReport()) {
+                    MovementBaseType movement = AisParser.parsePositionReport(binary, aisType);
+                    if (movement != null) {
+                        if (knownFishingVessels.contains(movement.getMmsi())) {
+                            movements.add(movement);
+                        } else {
+                            downsampledMovements.put(movement.getMmsi(), movement);
+                        }
                     }
+                } else if (aisType.isStaticReport()) {
+                    AssetDTO asset = AisParser.parseStaticReport(binary, aisType);
+                    downsampledAssets.put(asset.getMmsi(), asset);
+                    addFishingVessels(asset, knownFishingVessels);
                 }
-            } else if (retVal != null && retVal.getMessageType().equals(MessageType.ASSET)) {
-                AssetDTO assetDto  = retVal.getAssetDTO();
-                downsampledAssets.put(assetDto.getMmsi(), assetDto);
-                addFishingVessels(assetDto, knownFishingVessels);
+            } catch (Exception e) {
+                exchangeService.sendToErrorQueueParsingError(sentence);
+                LOG.error("Could not parse AIS message {}", sentence, e);
             }
         }
         exchangeService.sendToExchange(movements, startUp.getRegisterClassName());
@@ -92,74 +98,8 @@ public class ProcessService {
                 default:
             }
         } catch (Exception e) {
-            LOG.info("//NOP: {}", e.getLocalizedMessage());
+            LOG.info("Failed to parse {}", symbolString, e);
         }
         return null;
-    }
-
-    private BinaryToMovementReturn binaryToMovement(String binary, String sentence) {
-        if (binary == null || binary.length() < 144) {
-            return null;
-        }
-
-        try {
-            int messageType = Integer.parseInt(binary.substring(0, 6), 2);
-            // Check that the type of msg is a valid postion msg print for info. Should already be handled.
-            switch (messageType) {
-                case 1:
-                case 2:
-                case 3:
-                    return new BinaryToMovementReturn(AisParser.parseReportType123(binary));
-                case 5:
-                    // MSG ID 5
-                    return new BinaryToMovementReturn(AisParser.parseReportType5(binary));
-                case 18:
-                    // MSG ID 18 Class B Equipment Position report
-                    return new BinaryToMovementReturn(AisParser.parseReportType18(binary));
-                case 24:
-                    // MSG ID 24
-                    return new BinaryToMovementReturn(AisParser.parseReportType24(binary));
-                default:
-                    return null;
-            }
-        } catch (Exception e) {
-            exchangeService.sendToErrorQueueParsingError(sentence);
-            LOG.error(e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private enum MessageType {
-        MOVEMENT, ASSET;
-    }
-
-    private class BinaryToMovementReturn {
-        private MessageType messageType;
-        private MovementBaseType movementBaseType;
-        private AssetDTO assetDto;
-
-        public BinaryToMovementReturn(MovementBaseType movementBaseType) {
-            this.messageType = MessageType.MOVEMENT;
-            this.movementBaseType = movementBaseType;
-            this.assetDto = null;
-        }
-
-        public BinaryToMovementReturn(AssetDTO assetDto) {
-            this.messageType = MessageType.ASSET;
-            this.movementBaseType = null;
-            this.assetDto = assetDto;
-        }
-
-        public MovementBaseType getMovementBaseType() {
-            return movementBaseType;
-        }
-
-        public AssetDTO getAssetDTO() {
-            return assetDto;
-        }
-
-        public MessageType getMessageType() {
-            return messageType;
-        }
     }
 }
