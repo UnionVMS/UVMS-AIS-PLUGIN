@@ -2,17 +2,19 @@ package eu.europa.ec.fisheries.uvms.plugins.ais.service;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.when;
 import java.time.ZoneOffset;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
@@ -35,6 +37,9 @@ public class ProcessServiceTest {
     
     @InjectMocks
     private ProcessService processService;
+    
+    @Captor
+    private ArgumentCaptor<List<MovementBaseType>> captor;
     
     @Test
     public void aisType1Test() {
@@ -122,6 +127,27 @@ public class ProcessServiceTest {
         assertThat(fishingVessels.size(), is(1));
         String assetMmsi = fishingVessels.iterator().next();
         assertThat(assetMmsi, is(knownMmsi));
+    }
+    
+    @Test
+    public void knownFishingVesselTest() {
+        String knownMmsi = "219024194";
+        Set<String> fishingVessels = new HashSet<>();
+        fishingVessels.add(knownMmsi);
+        processService.processMessages(Arrays.asList(getAisPositionMessage()), fishingVessels);
+        Mockito.verify(exchangeService).sendToExchange(captor.capture(), Mockito.anyString());
+        List<MovementBaseType> movements = captor.getValue();
+        assertThat(movements.size(), is(1));
+        assertThat(movements.get(0).getMmsi(), is(knownMmsi));
+    }
+    
+    @Test
+    public void notKnownFishingVesselTest() {
+        Set<String> fishingVessels = new HashSet<>();
+        processService.processMessages(Arrays.asList(getAisPositionMessage()), fishingVessels);
+        Mockito.verify(exchangeService).sendToExchange(captor.capture(), Mockito.anyString());
+        List<MovementBaseType> movements = captor.getValue();
+        assertThat(movements.size(), is(0));
     }
     
     @Test
