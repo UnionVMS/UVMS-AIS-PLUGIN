@@ -111,8 +111,8 @@ public class AisService {
                     process.get(15, TimeUnit.SECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     LOG.error("Error during destroy: {}", e.getMessage());
+                    process.cancel(true);
                 }
-                process.cancel(true);
             }
         }
     }
