@@ -62,6 +62,9 @@ public class AisParser {
     }
     
     public static AisType parseAisType(String binary) {
+        if (binary == null) {
+            return AisType.UNKNOWN;
+        }
         int messageType = Integer.parseInt(binary.substring(0, 6), 2);
         switch (messageType) {
             case 1:
