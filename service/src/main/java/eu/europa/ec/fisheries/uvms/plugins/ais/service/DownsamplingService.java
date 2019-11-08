@@ -18,17 +18,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.ejb.Schedule;
 import javax.ejb.Singleton;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import eu.europa.ec.fisheries.schema.exchange.movement.v1.MovementBaseType;
 import eu.europa.ec.fisheries.uvms.asset.client.model.AssetDTO;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
@@ -36,8 +30,6 @@ import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 @Singleton
 public class DownsamplingService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DownsamplingService.class);
-    
     @Inject
     private StartupBean startUp;
     
@@ -50,8 +42,8 @@ public class DownsamplingService {
     private ConcurrentMap<String, MovementBaseType> downSampledMovements = new ConcurrentHashMap<>();
     private Map<String, AssetDTO> downSampledAssetInfo = new HashMap<>();
     
-    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
-//    @Schedule(minute = "*/1", hour = "*", persistent = false )
+//    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
+    @Schedule(minute = "*/5", hour = "*", persistent = false )
     public void sendDownSampledMovements() {
         if (downSampledMovements.isEmpty()) {
             return;
