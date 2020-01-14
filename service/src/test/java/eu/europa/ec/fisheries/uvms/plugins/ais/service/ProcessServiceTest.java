@@ -135,7 +135,7 @@ public class ProcessServiceTest {
         Set<String> fishingVessels = new HashSet<>();
         fishingVessels.add(knownMmsi);
         processService.processMessages(Arrays.asList(getAisPositionMessage()), fishingVessels);
-        Mockito.verify(exchangeService).sendToExchange(captor.capture(), Mockito.anyString());
+        Mockito.verify(exchangeService).sendToExchange(captor.capture(), Mockito.any());
         List<MovementBaseType> movements = captor.getValue();
         assertThat(movements.size(), is(1));
         assertThat(movements.get(0).getMmsi(), is(knownMmsi));
@@ -145,7 +145,7 @@ public class ProcessServiceTest {
     public void notKnownFishingVesselTest() {
         Set<String> fishingVessels = new HashSet<>();
         processService.processMessages(Arrays.asList(getAisPositionMessage()), fishingVessels);
-        Mockito.verify(exchangeService).sendToExchange(captor.capture(), Mockito.anyString());
+        Mockito.verify(exchangeService).sendToExchange(captor.capture(), Mockito.any());
         List<MovementBaseType> movements = captor.getValue();
         assertThat(movements.size(), is(0));
     }
