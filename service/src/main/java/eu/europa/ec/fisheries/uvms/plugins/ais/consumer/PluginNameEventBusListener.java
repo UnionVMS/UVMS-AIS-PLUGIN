@@ -36,10 +36,9 @@ import eu.europa.ec.fisheries.uvms.plugins.ais.producer.PluginMessageProducer;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.PluginService;
 
 @MessageDriven(mappedName = ExchangeModelConstants.PLUGIN_EVENTBUS, activationConfig = {
-    @ActivationConfigProperty(propertyName = "messagingType", propertyValue = ExchangeModelConstants.CONNECTION_TYPE),
     @ActivationConfigProperty(propertyName = "subscriptionDurability", propertyValue = "Durable"),
     @ActivationConfigProperty(propertyName = "destinationType", propertyValue = ExchangeModelConstants.DESTINATION_TYPE_TOPIC),
-    @ActivationConfigProperty(propertyName = "destination", propertyValue = ExchangeModelConstants.EVENTBUS_NAME)
+    @ActivationConfigProperty(propertyName = "destination", propertyValue = ExchangeModelConstants.PLUGIN_EVENTBUS)
 })
 public class PluginNameEventBusListener implements MessageListener {
 
