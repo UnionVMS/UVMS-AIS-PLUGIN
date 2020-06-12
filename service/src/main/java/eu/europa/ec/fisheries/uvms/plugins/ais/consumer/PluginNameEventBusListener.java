@@ -11,17 +11,6 @@ copy of the GNU General Public License along with the IFDM Suite. If not, see <h
  */
 package eu.europa.ec.fisheries.uvms.plugins.ais.consumer;
 
-import javax.ejb.ActivationConfigProperty;
-import javax.ejb.EJB;
-import javax.ejb.MessageDriven;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import eu.europa.ec.fisheries.schema.exchange.common.v1.AcknowledgeType;
 import eu.europa.ec.fisheries.schema.exchange.common.v1.AcknowledgeTypeType;
 import eu.europa.ec.fisheries.schema.exchange.plugin.v1.PluginBaseRequest;
@@ -34,6 +23,16 @@ import eu.europa.ec.fisheries.uvms.exchange.model.mapper.JAXBMarshaller;
 import eu.europa.ec.fisheries.uvms.plugins.ais.StartupBean;
 import eu.europa.ec.fisheries.uvms.plugins.ais.producer.PluginMessageProducer;
 import eu.europa.ec.fisheries.uvms.plugins.ais.service.PluginService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ejb.ActivationConfigProperty;
+import javax.ejb.EJB;
+import javax.ejb.MessageDriven;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.TextMessage;
 
 @MessageDriven(mappedName = ExchangeModelConstants.PLUGIN_EVENTBUS, activationConfig = {
     @ActivationConfigProperty(propertyName = "subscriptionDurability", propertyValue = "Durable"),

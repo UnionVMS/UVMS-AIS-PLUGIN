@@ -30,6 +30,9 @@ import eu.europa.ec.fisheries.uvms.plugins.ais.service.Conversion;
 public class AisParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(AisParser.class);
+
+    //according to: http://emsa.europa.eu/cise-documentation/cise-data-model-1.5.3/model/guidelines/687507181.html
+    private static final int AIS_SPEED_ERROR_CODE = 1023;
     
     private AisParser() {}
     
@@ -120,6 +123,7 @@ public class AisParser {
         String mmsi = String.valueOf(mmsiNumeric);
         movement.setMmsi(mmsi);
         movement.setAssetId(getAssetId(mmsi));
+
         movement.setReportedSpeed(parseSpeedOverGround(binary, 50, 60));
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 61, 89), parseCoordinate(binary, 89, 116));
         if (point == null) {
@@ -282,8 +286,12 @@ public class AisParser {
         return i.doubleValue() / 10;
     }
 
-    private static double parseSpeedOverGround(String s, int stringStart, int stringEnd) {
+
+    private static Double parseSpeedOverGround(String s, int stringStart, int stringEnd) {
         Integer speedOverGround = Integer.parseInt(s.substring(stringStart, stringEnd), 2);
+        if(speedOverGround == AIS_SPEED_ERROR_CODE){
+            return null;
+        }
         return speedOverGround.doubleValue() / 10;
     }
 
