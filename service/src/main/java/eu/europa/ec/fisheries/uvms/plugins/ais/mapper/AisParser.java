@@ -125,6 +125,7 @@ public class AisParser {
         movement.setAssetId(getAssetId(mmsi));
 
         movement.setReportedSpeed(parseSpeedOverGround(binary, 50, 60));
+        movement.setAisPositionAccuracy(Short.parseShort(binary.substring(60, 61), 2));
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 61, 89), parseCoordinate(binary, 89, 116));
         if (point == null) {
             return null;
@@ -195,6 +196,8 @@ public class AisParser {
         // speedOverGround
         double speedOverGround = parseSpeedOverGround(binary, 46, 56);
         movement.setReportedSpeed(speedOverGround);
+
+        movement.setAisPositionAccuracy(Short.parseShort(binary.substring(56, 57), 2));
 
         // position  longitude latitude
         MovementPoint point = getMovementPoint(parseCoordinate(binary, 57, 85), parseCoordinate(binary, 85, 112));

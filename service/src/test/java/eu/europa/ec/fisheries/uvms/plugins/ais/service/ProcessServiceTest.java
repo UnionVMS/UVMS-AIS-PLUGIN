@@ -52,6 +52,7 @@ public class ProcessServiceTest {
         assertThat(movement.getPosition().getLongitude(), is(-123.39538333333333));
         assertThat(movement.getTrueHeading(), is(215));
         assertThat(movement.getReportedSpeed(), is(12.3));
+        assertThat(movement.getAisPositionAccuracy(), is((short)1));
         int positionSecond = movement.getPositionTime().toInstant().atZone(ZoneOffset.UTC).getSecond();
         assertThat(positionSecond, is(33));
     }
@@ -67,6 +68,7 @@ public class ProcessServiceTest {
         assertThat(movement.getPosition().getLongitude(), is(-71.62614333333333333333333333));
         assertThat(movement.getTrueHeading(), is(91));
         assertThat(movement.getReportedSpeed(), is(13.9));
+        assertThat(movement.getAisPositionAccuracy(), is((short)0));
         int positionSecond = movement.getPositionTime().toInstant().atZone(ZoneOffset.UTC).getSecond();
         assertThat(positionSecond, is(41));
     }
@@ -82,6 +84,7 @@ public class ProcessServiceTest {
         assertThat(movement.getPosition().getLongitude(), is(-76.32753333333333333333333333));
         assertThat(movement.getTrueHeading(), is(352));
         assertThat(movement.getReportedSpeed(), is(0.0));
+        assertThat(movement.getAisPositionAccuracy(), is((short)1));
         int positionSecond = movement.getPositionTime().toInstant().atZone(ZoneOffset.UTC).getSecond();
         assertThat(positionSecond, is(35));
     }
@@ -106,6 +109,7 @@ public class ProcessServiceTest {
         assertThat(movement.getFlagState(), is("USA"));
         assertThat(movement.getPosition().getLatitude(), is(40.68454));
         assertThat(movement.getPosition().getLongitude(), is(-74.07213166666666666666666667));
+        assertThat(movement.getAisPositionAccuracy(), is((short)0));
     }
     
     @Test
