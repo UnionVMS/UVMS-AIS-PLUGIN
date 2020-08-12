@@ -194,7 +194,7 @@ public class AisParser {
         movement.setAssetId(getAssetId(mmsi));
 
         // speedOverGround
-        double speedOverGround = parseSpeedOverGround(binary, 46, 56);
+        Double speedOverGround = parseSpeedOverGround(binary, 46, 56);
         movement.setReportedSpeed(speedOverGround);
 
         movement.setAisPositionAccuracy(Short.parseShort(binary.substring(56, 57), 2));
