@@ -75,7 +75,7 @@ public class ExchangeService {
             producer.setDeliveryMode(DeliveryMode.PERSISTENT);
             // emit
             try {
-                String text = ExchangeModuleRequestMapper.createReceiveAssetInformation(json, "AIS", PluginType.OTHER);
+                String text = ExchangeModuleRequestMapper.createReceiveAssetInformation(json, "AIS", PluginType.OTHER, "AIS Plugin");
                 TextMessage message = session.createTextMessage();
                 message.setStringProperty("FUNCTION", ExchangeModuleMethod.RECEIVE_ASSET_INFORMATION.toString());
                 message.setText(text);
