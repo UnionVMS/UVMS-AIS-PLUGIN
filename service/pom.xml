@@ -13,14 +13,10 @@
     </parent>
 
     <properties>
-        <application.name>${project.parent.artifactId}</application.name>
         <asset.client.version>6.0.27</asset.client.version>
         <application.name>${project.parent.artifactId}</application.name>
         <application.responseTopicName>PLUGIN_RESPONSE</application.responseTopicName>
         <application.groupid>${project.parent.groupId}</application.groupid> 
-        <application.version>${project.parent.version}</application.version>
-        <application.logfile>/app/logs/${project.parent.artifactId}/${project.parent.artifactId}.log</application.logfile>
-        <application.error.logfile>/app/logs/${project.parent.artifactId}/${project.parent.artifactId}-error.log</application.error.logfile>
     </properties>
 
     <dependencies>
