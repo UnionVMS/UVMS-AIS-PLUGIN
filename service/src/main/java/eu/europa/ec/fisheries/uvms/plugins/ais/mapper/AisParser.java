@@ -113,6 +113,8 @@ public class AisParser {
     
     public static MovementBaseType parseReportType123(String binary) {
         MovementBaseType movement = new MovementBaseType();
+        Integer messageType = Integer.parseInt(binary.substring(0, 6), 2);
+        movement.setStatus(messageType.toString());
         Integer mmsiNumeric = Integer.MIN_VALUE;
         try{
             mmsiNumeric = Integer.parseInt(binary.substring(8, 38), 2);
@@ -180,7 +182,8 @@ public class AisParser {
             return null;
         }
         MovementBaseType movement = new MovementBaseType();
-
+        Integer messageType = Integer.parseInt(binary.substring(0, 6), 2);
+        movement.setStatus(messageType.toString());
         // mmsi
         Integer mmsiNumeric = Integer.MIN_VALUE;
         try{
