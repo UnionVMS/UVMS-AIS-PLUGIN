@@ -32,7 +32,7 @@ public class Conversion {
     
     public static String getShiptypeForCode(Integer code){
         if(code == null) return "";
-        if((code < 1) || (code > 99)){
+        if((code < 0) || (code > 99)){
             return "No such code : " + code;
         }
         return shipTypeMap.get(code);
