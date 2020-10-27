@@ -108,7 +108,7 @@ public class Conversion {
         shipTypes.put(48,"HSC");
         shipTypes.put(49,"HSC");
         shipTypes.put(50,"Pilot");
-        shipTypes.put(51,"Search and Rescue");
+        shipTypes.put(51,"SAR");
         shipTypes.put(52,"Tug");
         shipTypes.put(53,"Port Tender");
         shipTypes.put(54,"Anti-pollution equipment");
