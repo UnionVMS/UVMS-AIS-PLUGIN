@@ -116,7 +116,7 @@ public class Conversion {
         shipTypes.put(56,"Local Vessel");
         shipTypes.put(57,"Local Vessel");
         shipTypes.put(58,"Medical Transport");
-        shipTypes.put(59,"Noncombatant ship according to RR Resolution No. 18");
+        shipTypes.put(59,"Ships according to RR");
         shipTypes.put(60,"Passenger");
         shipTypes.put(61,"Passenger");
         shipTypes.put(62,"Passenger");
