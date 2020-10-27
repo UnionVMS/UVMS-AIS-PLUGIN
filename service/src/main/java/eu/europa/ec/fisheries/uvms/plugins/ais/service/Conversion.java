@@ -111,7 +111,7 @@ public class Conversion {
         shipTypes.put(51,"SAR");
         shipTypes.put(52,"Tug");
         shipTypes.put(53,"Port Tender");
-        shipTypes.put(54,"Anti-pollution equipment");
+        shipTypes.put(54,"Anti-pollution");
         shipTypes.put(55,"Law Enforcement");
         shipTypes.put(56,"Local Vessel");
         shipTypes.put(57,"Local Vessel");
