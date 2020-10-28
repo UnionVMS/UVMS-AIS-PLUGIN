@@ -119,7 +119,7 @@ public class ProcessServiceTest {
         assertThat(assetMap.size(), is(1));
         AssetDTO asset = assetMap.get("351759000");
         assertThat(asset.getFlagStateCode(), is("PAN"));
-        assertThat(asset.getVesselType(), is("Cargo all ships of this type"));
+        assertThat(asset.getVesselType(), is("Cargo"));
         assertThat(asset.getIrcs(), is("3FOF8"));
     }
     
