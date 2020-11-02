@@ -76,8 +76,26 @@ public class Conversion {
     private static Map<Integer, String> buildShiptypeMap() {
         Map<Integer, String> shipTypes = new TreeMap<>();
         shipTypes.put(0,"Not available");
-        shipTypes.put(1-19,"Reserved for future use");
-        shipTypes.put(20,"(WIG)"); //Wing in ground
+        shipTypes.put(1,"Reserved for future use");
+        shipTypes.put(2,"Reserved for future use");
+        shipTypes.put(3,"Reserved for future use");
+        shipTypes.put(4,"Reserved for future use");
+        shipTypes.put(5,"Reserved for future use");
+        shipTypes.put(6,"Reserved for future use");
+        shipTypes.put(7,"Reserved for future use");
+        shipTypes.put(8,"Reserved for future use");
+        shipTypes.put(9,"Reserved for future use");
+        shipTypes.put(10,"Reserved for future use");
+        shipTypes.put(11,"Reserved for future use");
+        shipTypes.put(12,"Reserved for future use");
+        shipTypes.put(13,"Reserved for future use");
+        shipTypes.put(14,"Reserved for future use");
+        shipTypes.put(15,"Reserved for future use");
+        shipTypes.put(16,"Reserved for future use");
+        shipTypes.put(17,"Reserved for future use");
+        shipTypes.put(18,"Reserved for future use");
+        shipTypes.put(19,"Reserved for future use");
+        shipTypes.put(20,"WIG"); //Wing in ground
         shipTypes.put(21,"WIG");
         shipTypes.put(22,"WIG");
         shipTypes.put(23,"WIG");
