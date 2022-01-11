@@ -235,9 +235,9 @@ public class AisParser {
         req.setMethod(ExchangeModuleMethod.RECEIVE_ASSET_INFORMATION);
 
         String mmsi = String.valueOf(Integer.parseInt(binary.substring(8, 38), 2));
-        String vesselName = "";
+        String vesselName = null;
         Integer shipType = null;
-        String ircs = "";
+        String ircs = null;
         String ansi3 = null;
 
         // if partNumber == 0   the rest of the message is interpreted as a Part A
